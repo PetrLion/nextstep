@@ -15,12 +15,12 @@
       # Будуємо словник: ім'я вузла -> node_id
       node_map = {n["name"]: n["node_id"] for n in project["topology"]["nodes"]}
 
-      # Список бажаних зв'язків
+      # Список бажаних зв'язків (замкнене кільце: R1-R2-R3-R4-R1)
       desired_links = [
           {"node_a": "R1", "adapter_a": 0, "port_a": 0, "node_b": "R2", "adapter_b": 0, "port_b": 0},
-          {"node_a": "R1", "adapter_a": 1, "port_a": 0, "node_b": "R3", "adapter_b": 0, "port_b": 0},
-          {"node_a": "R1", "adapter_a": 2, "port_a": 0, "node_b": "R4", "adapter_b": 0, "port_b": 0},
-          {"node_a": "R2", "adapter_a": 1, "port_a": 0, "node_b": "R3", "adapter_b": 1, "port_b": 0},
+          {"node_a": "R2", "adapter_a": 1, "port_a": 0, "node_b": "R3", "adapter_b": 0, "port_b": 0},
+          {"node_a": "R3", "adapter_a": 1, "port_a": 0, "node_b": "R4", "adapter_b": 0, "port_b": 0},
+          {"node_a": "R4", "adapter_a": 1, "port_a": 0, "node_b": "R1", "adapter_b": 1, "port_b": 0},
       ]
 
       # Збираємо вже існуючі пари (node_id, adapter, port) з обох кінців
