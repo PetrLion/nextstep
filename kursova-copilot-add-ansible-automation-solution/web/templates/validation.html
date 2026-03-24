@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Validation – GNS3{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-check-circle me-2 text-warning"></i>Валідація топології</h4>
+  <button class="btn btn-warning" id="validateBtn" onclick="runValidation()">
+    <i class="bi bi-play-fill me-1"></i>Запустити перевірку
+  </button>
+</div>
+
+<!-- Result panel -->
+<div id="resultPanel" class="{% if not result %}d-none{% endif %}">
+  {% if result %}{% set r = result %}{% else %}{% set r = {} %}{% endif %}
+  <div class="row g-3 mb-4" id="statsRow">
+    <div class="col-6 col-md-3">
+      <div class="card text-center">
+        <div class="card-body py-2">
+          <div class="fs-2 fw-bold text-info" id="v-nodes">{{ r.get('nodes_count', '—') }}</div>
+          <div class="small text-muted">Вузлів</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center">
+        <div class="card-body py-2">
+          <div class="fs-2 fw-bold text-primary" id="v-links">{{ r.get('links_count', '—') }}</div>
+          <div class="small text-muted">З'єднань</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center">
+        <div class="card-body py-2">
+          <div class="fs-2 fw-bold text-danger" id="v-errors">{{ r.get('errors', []) | length }}</div>
+          <div class="small text-muted">Помилок</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center">
+        <div class="card-body py-2">
+          <div class="fs-2 fw-bold text-warning" id="v-warnings">{{ r.get('warnings', []) | length }}</div>
+          <div class="small text-muted">Попереджень</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status badge -->
+  <div class="alert" id="statusAlert" role="alert">
+    {% if r.get('status') == 'ok' %}
+    <i class="bi bi-check-circle-fill me-2 text-success"></i>
+    <strong>Топологія валідна!</strong> Помилок не знайдено.
+    {% elif r.get('status') == 'warning' %}
+    <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i>
+    <strong>Увага!</strong> Знайдено {{ r.get('warnings', []) | length }} попередження(нь).
+    {% elif r.get('status') == 'error' %}
+    <i class="bi bi-x-circle-fill me-2 text-danger"></i>
+    <strong>Помилка!</strong> Знайдено {{ r.get('errors', []) | length }} помилку(ок).
+    {% else %}
+    <i class="bi bi-hourglass me-2"></i>Натисніть "Запустити перевірку" для початку аналізу.
+    {% endif %}
+  </div>
+
+  <!-- Errors list -->
+  {% if r.get('errors') %}
+  <div class="card border-danger mb-3">
+    <div class="card-header text-danger"><i class="bi bi-x-circle me-2"></i>Помилки</div>
+    <ul class="list-group list-group-flush" id="errorsList">
+      {% for e in r.get('errors', []) %}
+      <li class="list-group-item list-group-item-dark text-danger">
+        <i class="bi bi-x-circle-fill me-2"></i>{{ e }}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Warnings list -->
+  {% if r.get('warnings') %}
+  <div class="card border-warning mb-3">
+    <div class="card-header text-warning"><i class="bi bi-exclamation-triangle me-2"></i>Попередження</div>
+    <ul class="list-group list-group-flush" id="warningsList">
+      {% for w in r.get('warnings', []) %}
+      <li class="list-group-item list-group-item-dark text-warning">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ w }}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if r.get('checked_at') %}
+  <div class="text-muted small text-end">Перевірено: {{ r.get('checked_at') }}</div>
+  {% endif %}
+</div>
+
+<!-- Empty state -->
+<div id="emptyState" class="{% if result %}d-none{% endif %} text-center py-5 text-muted">
+  <i class="bi bi-check-circle display-3 d-block mb-3"></i>
+  <p>Натисніть <strong>"Запустити перевірку"</strong> для аналізу топології.</p>
+  <p class="small">Перевіряються: ізольовані вузли, цикли, зв'язність.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function runValidation() {
+  const btn = document.getElementById('validateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Перевіряю…';
+
+  fetch('/api/validate')
+    .then(r => r.json())
+    .then(data => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play-fill me-1"></i>Запустити перевірку';
+      renderResult(data);
+    })
+    .catch(e => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play-fill me-1"></i>Запустити перевірку';
+      showToast('danger', `Error: ${e}`);
+    });
+}
+
+function renderResult(data) {
+  document.getElementById('emptyState').classList.add('d-none');
+  document.getElementById('resultPanel').classList.remove('d-none');
+
+  document.getElementById('v-nodes').textContent = data.nodes_count || 0;
+  document.getElementById('v-links').textContent = data.links_count || 0;
+  document.getElementById('v-errors').textContent = (data.errors || []).length;
+  document.getElementById('v-warnings').textContent = (data.warnings || []).length;
+
+  const alert = document.getElementById('statusAlert');
+  alert.className = 'alert ';
+  if (data.status === 'ok') {
+    alert.className += 'alert-success';
+    alert.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i><strong>Топологія валідна!</strong> Помилок не знайдено.';
+  } else if (data.status === 'warning') {
+    alert.className += 'alert-warning';
+    alert.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Увага!</strong> Знайдено ${(data.warnings||[]).length} попередження(нь).`;
+  } else {
+    alert.className += 'alert-danger';
+    alert.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i><strong>Помилка!</strong> Знайдено ${(data.errors||[]).length} помилку(ок).`;
+  }
+}
+
+// Live update
+socket.on('validation_update', renderResult);
+</script>
+{% endblock %}

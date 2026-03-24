@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – GNS3{% endblock %}
+
+{% block content %}
+<!-- Status bar -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-center border-info">
+      <div class="card-body py-2">
+        <div class="fs-1 fw-bold text-info">{{ nodes | length }}</div>
+        <div class="small text-muted">Вузлів</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center border-primary">
+      <div class="card-body py-2">
+        <div class="fs-1 fw-bold text-primary">{{ links | length }}</div>
+        <div class="small text-muted">З'єднань</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center border-success">
+      <div class="card-body py-2">
+        <div class="fs-1 fw-bold text-success" id="running-count">
+          {{ nodes | selectattr('status', 'equalto', 'started') | list | length }}
+        </div>
+        <div class="small text-muted">Запущено</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center {% if gns3_online %}border-success{% else %}border-warning{% endif %}">
+      <div class="card-body py-2">
+        <div class="fs-4 fw-bold {% if gns3_online %}text-success{% else %}text-warning{% endif %}">
+          {% if gns3_online %}🟢 Online{% else %}🟡 File{% endif %}
+        </div>
+        <div class="small text-muted">GNS3 API</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Nodes table -->
+  <div class="col-12 col-xl-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-hdd-stack me-2 text-info"></i>Вузли</span>
+        <div>
+          <button class="btn btn-sm btn-outline-success" onclick="startAllNodes()">
+            <i class="bi bi-play-fill me-1"></i>Start All
+          </button>
+          <button class="btn btn-sm btn-outline-danger ms-1" onclick="stopAllNodes()">
+            <i class="bi bi-stop-fill me-1"></i>Stop All
+          </button>
+          <button class="btn btn-sm btn-outline-secondary ms-1" onclick="refreshDashboard()">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        {% if nodes %}
+        <div class="table-responsive">
+          <table class="table table-dark table-hover table-striped mb-0" id="nodesTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Ім'я</th>
+                <th>Тип</th>
+                <th>Статус</th>
+                <th>Console</th>
+                <th>Дії</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for n in nodes %}
+              <tr data-node-id="{{ n.node_id }}">
+                <td>{{ loop.index }}</td>
+                <td><strong>{{ n.name }}</strong></td>
+                <td><span class="badge bg-secondary">{{ n.node_type }}</span></td>
+                <td>
+                  {% set st = n.get('status', 'stopped') %}
+                  {% if st == 'started' %}
+                    <span class="badge bg-success"><i class="bi bi-circle-fill me-1"></i>Запущено</span>
+                  {% elif st == 'suspended' %}
+                    <span class="badge bg-warning text-dark"><i class="bi bi-pause-fill me-1"></i>Призупинено</span>
+                  {% else %}
+                    <span class="badge bg-danger"><i class="bi bi-circle me-1"></i>Зупинено</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if n.get('console') %}
+                    <a href="telnet://{{ n.get('console_host', '127.0.0.1') }}:{{ n.console }}"
+                       class="badge bg-info text-dark text-decoration-none">
+                      <i class="bi bi-terminal me-1"></i>:{{ n.console }}
+                    </a>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <button class="btn btn-xs btn-success me-1" onclick="nodeAction('{{ n.node_id }}','start')" title="Start">
+                    <i class="bi bi-play-fill"></i>
+                  </button>
+                  <button class="btn btn-xs btn-warning me-1" onclick="nodeAction('{{ n.node_id }}','stop')" title="Stop">
+                    <i class="bi bi-stop-fill"></i>
+                  </button>
+                  <button class="btn btn-xs btn-danger" onclick="nodeDelete('{{ n.node_id }}','{{ n.name }}')" title="Delete">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-hdd-x display-4 d-block mb-2"></i>
+          Вузли відсутні.<br>
+          <small>Запустіть: <code>./start_all.sh --ansible</code></small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Links + info -->
+  <div class="col-12 col-xl-4">
+    <!-- Info card -->
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-info-circle me-2 text-info"></i>Інформація</div>
+      <div class="card-body small">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="text-muted">GNS3 URL:</span>
+          <a href="{{ gns3_url }}" target="_blank" class="text-info">{{ gns3_url }}</a>
+        </div>
+        <div class="d-flex justify-content-between mb-1">
+          <span class="text-muted">Файл проекту:</span>
+          <span class="text-truncate ms-2" style="max-width:200px" title="{{ project_file }}">{{ project_file }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-1">
+          <span class="text-muted">Джерело даних:</span>
+          <span class="badge {% if gns3_online %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ source }}</span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">Оновлено:</span>
+          <span>{{ ts }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Links card -->
+    <div class="card">
+      <div class="card-header"><i class="bi bi-diagram-2 me-2 text-primary"></i>З'єднання</div>
+      <div class="card-body p-0">
+        {% if links %}
+        <ul class="list-group list-group-flush" id="linksList">
+          {% for l in links %}
+          <li class="list-group-item list-group-item-dark d-flex justify-content-between align-items-center">
+            <span>
+              <strong>{{ l.node_a }}</strong>
+              <i class="bi bi-arrow-left-right mx-2 text-secondary"></i>
+              <strong>{{ l.node_b }}</strong>
+            </span>
+            <button class="btn btn-xs btn-outline-danger" onclick="linkDelete('{{ l.link_id }}')" title="Delete link">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-center py-3 text-muted small">
+          <i class="bi bi-diagram-2 d-block mb-1"></i>З'єднань немає
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="card mt-4">
+      <div class="card-header"><i class="bi bi-lightning me-2 text-warning"></i>Швидкі дії</div>
+      <div class="card-body">
+        <a href="/topology" class="btn btn-sm btn-outline-info w-100 mb-2">
+          <i class="bi bi-diagram-3 me-1"></i>Переглянути топологію
+        </a>
+        <a href="/validation" class="btn btn-sm btn-outline-warning w-100 mb-2">
+          <i class="bi bi-check-circle me-1"></i>Валідувати мережу
+        </a>
+        <a href="/scan" class="btn btn-sm btn-outline-success w-100 mb-2">
+          <i class="bi bi-search me-1"></i>Сканувати мережу
+        </a>
+        <a href="/api/topology" target="_blank" class="btn btn-sm btn-outline-secondary w-100">
+          <i class="bi bi-braces me-1"></i>JSON API
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshDashboard() { window.location.reload(); }
+
+function nodeAction(nodeId, action) {
+  fetch(`/api/node/${nodeId}/${action}`, { method: 'POST' })
+    .then(r => r.json())
+    .then(() => {
+      showToast(action === 'start' ? 'success' : 'warning',
+        `Node ${action === 'start' ? 'started' : 'stopped'}`);
+      setTimeout(refreshDashboard, 1500);
+    })
+    .catch(e => showToast('danger', `Error: ${e}`));
+}
+
+function nodeDelete(nodeId, name) {
+  if (!confirm(`Delete node "${name}"?`)) return;
+  fetch(`/api/node/${nodeId}`, { method: 'DELETE' })
+    .then(() => { showToast('danger', `Node ${name} deleted`); setTimeout(refreshDashboard, 1000); })
+    .catch(e => showToast('danger', `Error: ${e}`));
+}
+
+function linkDelete(linkId) {
+  if (!confirm('Delete this link?')) return;
+  fetch(`/api/link/${linkId}`, { method: 'DELETE' })
+    .then(() => { showToast('danger', 'Link deleted'); setTimeout(refreshDashboard, 1000); })
+    .catch(e => showToast('danger', `Error: ${e}`));
+}
+
+function startAllNodes() {
+  document.querySelectorAll('#nodesTable tbody tr[data-node-id]').forEach(row => {
+    const id = row.dataset.nodeId;
+    fetch(`/api/node/${id}/start`, { method: 'POST' });
+  });
+  showToast('success', 'Starting all nodes…');
+  setTimeout(refreshDashboard, 3000);
+}
+
+function stopAllNodes() {
+  if (!confirm('Stop all nodes?')) return;
+  document.querySelectorAll('#nodesTable tbody tr[data-node-id]').forEach(row => {
+    fetch(`/api/node/${row.dataset.nodeId}/stop`, { method: 'POST' });
+  });
+  showToast('warning', 'Stopping all nodes…');
+  setTimeout(refreshDashboard, 3000);
+}
+</script>
+{% endblock %}

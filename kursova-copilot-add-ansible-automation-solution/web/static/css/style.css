@@ -1,0 +1,123 @@
+/* ============================================================
+   GNS3 Dashboard – Custom styles (dark theme overlay)
+   ============================================================ */
+
+:root {
+  --gns3-bg: #0d1117;
+  --gns3-card: #161b22;
+  --gns3-border: #30363d;
+  --gns3-text: #c9d1d9;
+  --gns3-muted: #8b949e;
+  --gns3-accent: #58a6ff;
+}
+
+html, body {
+  background-color: var(--gns3-bg) !important;
+  color: var(--gns3-text);
+  min-height: 100vh;
+}
+
+/* Cards */
+.card {
+  background-color: var(--gns3-card) !important;
+  border-color: var(--gns3-border) !important;
+}
+
+.card-header {
+  background-color: rgba(255,255,255,.04) !important;
+  border-color: var(--gns3-border) !important;
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+.card-footer {
+  background-color: transparent !important;
+  border-color: var(--gns3-border) !important;
+}
+
+/* Tables */
+.table-dark {
+  --bs-table-bg: transparent;
+  --bs-table-striped-bg: rgba(255,255,255,.03);
+  --bs-table-hover-bg: rgba(88,166,255,.08);
+}
+
+.table thead th {
+  background-color: rgba(88,166,255,.1) !important;
+  border-color: var(--gns3-border) !important;
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* Navbar */
+.navbar {
+  background-color: #010409 !important;
+}
+
+.navbar-brand {
+  font-size: 1rem;
+  letter-spacing: .02em;
+}
+
+/* Buttons – extra-small */
+.btn-xs {
+  padding: .15rem .4rem;
+  font-size: .75rem;
+  border-radius: .25rem;
+}
+
+/* List group */
+.list-group-item-dark {
+  background-color: var(--gns3-card) !important;
+  border-color: var(--gns3-border) !important;
+  color: var(--gns3-text) !important;
+}
+
+.list-group-item-action:hover {
+  background-color: rgba(88,166,255,.08) !important;
+}
+
+.list-group-item-action.active {
+  background-color: rgba(88,166,255,.15) !important;
+  border-color: var(--gns3-accent) !important;
+  color: var(--gns3-accent) !important;
+}
+
+/* Form controls */
+.form-control,
+.form-select {
+  background-color: #0d1117 !important;
+  border-color: var(--gns3-border) !important;
+  color: var(--gns3-text) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--gns3-accent) !important;
+  box-shadow: 0 0 0 .2rem rgba(88,166,255,.2) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--gns3-bg); }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+/* Badge overrides */
+.badge { font-weight: 500; }
+
+/* Toast */
+.toast {
+  background-color: var(--gns3-card) !important;
+  border-color: var(--gns3-border) !important;
+}
+
+/* Topology canvas */
+#topology-canvas .vis-network { border-radius: 8px; }
+
+/* Responsive tweaks */
+@media (max-width: 576px) {
+  .fs-1 { font-size: 1.6rem !important; }
+  .fs-2 { font-size: 1.3rem !important; }
+}
