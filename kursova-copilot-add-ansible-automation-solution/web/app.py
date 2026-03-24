@@ -3,10 +3,15 @@
 
 import json
 import os
+import sys
+import threading
 from datetime import datetime
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, jsonify, render_template_string, render_template, request
 
-app = Flask(__name__)
+# Allow imports from the web/ directory itself
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+app = Flask(__name__, template_folder="templates")
 
 GNS3_PROJECT_FILE = os.environ.get(
     "GNS3_PROJECT_FILE",
@@ -183,6 +188,111 @@ def api_topology():
         "links": links_out,
         "scanned_at": datetime.now().isoformat(),
     })
+
+
+
+
+# ── Security: in-memory results store ────────────────────────────────────────
+_security_results = []
+_security_status = {}
+_results_lock = threading.Lock()
+
+
+def _record_result(entry: dict):
+    """Append a timestamped entry to the in-memory results log."""
+    entry.setdefault("ts", datetime.now().isoformat())
+    with _results_lock:
+        _security_results.append(entry)
+        # Keep only the last 200 entries
+        if len(_security_results) > 200:
+            _security_results.pop(0)
+
+
+# ── Security page ─────────────────────────────────────────────────────────────
+
+@app.route("/security")
+def security_page():
+    return render_template("security.html")
+
+
+# ── Security API ──────────────────────────────────────────────────────────────
+
+_TEST_NAMES = {"port_scan", "vulnerability", "ping", "acl"}
+_FIX_NAMES  = {"close_ports", "enable_firewall", "update_patches", "reset_acl"}
+
+
+@app.route("/api/security/test/<test_name>", methods=["POST"])
+def api_security_test(test_name: str):
+    if test_name not in _TEST_NAMES:
+        return jsonify({"error": f"Unknown test: {test_name!r}"}), 400
+
+    try:
+        if test_name == "port_scan":
+            from security.port_scan import scan
+            result = scan()
+        elif test_name == "vulnerability":
+            from security.vulnerability_check import check
+            result = check()
+        elif test_name == "ping":
+            from security.ping_check import check
+            result = check()
+        elif test_name == "acl":
+            from security.acl_validator import validate
+            result = validate()
+        else:
+            result = {"error": "Not implemented"}
+    except Exception as exc:
+        result = {"error": str(exc)}
+
+    entry = {"type": "test", "name": test_name, **result}
+    _record_result(entry)
+    with _results_lock:
+        _security_status[test_name] = {"severity": result.get("severity", result.get("overall_severity"))}
+
+    return jsonify(result)
+
+
+@app.route("/api/security/fix/<fix_name>", methods=["POST"])
+def api_security_fix(fix_name: str):
+    if fix_name not in _FIX_NAMES:
+        return jsonify({"error": f"Unknown fix: {fix_name!r}"}), 400
+
+    try:
+        if fix_name == "close_ports":
+            from security.firewall_rules import close_open_ports
+            result = close_open_ports()
+        elif fix_name == "enable_firewall":
+            from security.firewall_rules import enable_firewall
+            result = enable_firewall()
+        elif fix_name == "update_patches":
+            from security.firewall_rules import update_patches
+            result = update_patches()
+        elif fix_name == "reset_acl":
+            from security.firewall_rules import reset_acl_rules
+            result = reset_acl_rules()
+        else:
+            result = {"error": "Not implemented"}
+    except Exception as exc:
+        result = {"error": str(exc)}
+
+    entry = {"type": "fix", "name": fix_name, **result}
+    _record_result(entry)
+    with _results_lock:
+        _security_status[fix_name] = {"fix_status": result.get("status")}
+
+    return jsonify(result)
+
+
+@app.route("/api/security/results")
+def api_security_results():
+    with _results_lock:
+        return jsonify({"results": list(_security_results)})
+
+
+@app.route("/api/security/status")
+def api_security_status():
+    with _results_lock:
+        return jsonify({"status": dict(_security_status)})
 
 
 if __name__ == "__main__":
