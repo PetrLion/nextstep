@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom:20px">📊 Dashboard</h1>
+
+<!-- Summary stats -->
+<div class="stat-grid">
+  {% set up_count   = hosts | selectattr('status','equalto','UP')   | list | length %}
+  {% set down_count = hosts | selectattr('status','equalto','DOWN') | list | length %}
+  <div class="stat-card">
+    <div class="stat-value" style="color:var(--green)">{{ up_count }}</div>
+    <div class="stat-label">Hosts UP</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:var(--red)">{{ down_count }}</div>
+    <div class="stat-label">Hosts DOWN</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ hosts | length }}</div>
+    <div class="stat-label">Total Hosts</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="font-size:1em;color:var(--yellow)">{{ last_update }}</div>
+    <div class="stat-label">Оновлено</div>
+  </div>
+</div>
+
+<!-- Host status table -->
+<div class="card">
+  <h2>🖧 Статус хостів</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Хост</th>
+        <th>Тип</th>
+        <th>Зона</th>
+        <th>IP-адреса</th>
+        <th>Console</th>
+        <th>Статус</th>
+        <th>Перевірено</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in hosts %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+          <strong>{{ h.name }}</strong><br>
+          <small style="color:var(--muted)">{{ h.label }}</small>
+        </td>
+        <td>{{ h.type }}</td>
+        <td><span class="zone-badge zone-{{ h.zone }}">{{ h.zone }}</span></td>
+        <td><code>{{ h.ip }}</code></td>
+        <td><code>{{ h.console }}</code></td>
+        <td>
+          <span id="status-{{ h.id }}"
+                class="badge {{ 'badge-ok' if h.status == 'UP' else 'badge-err' if h.status == 'DOWN' else 'badge-warn' }}">
+            {{ h.status }}
+          </span>
+        </td>
+        <td>{{ h.last_check }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Project info -->
+<div class="card">
+  <h2>📋 Проект GNS3</h2>
+  <table>
+    <tr><th>Параметр</th><th>Значення</th></tr>
+    <tr>
+      <td>Файл проекту</td>
+      <td><code>{{ project_file }}</code></td>
+    </tr>
+    <tr>
+      <td>Статус файлу</td>
+      <td>
+        <span class="badge {{ 'badge-ok' if file_ok else 'badge-err' }}">
+          {{ '✅ знайдено' if file_ok else '❌ не знайдено' }}
+        </span>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- Operation logs -->
+{% if logs %}
+<div class="card">
+  <h2>📋 Журнал операцій</h2>
+  <div class="output-box" style="color:var(--text)">
+    {% for entry in logs %}
+    <div class="log-entry log-{{ entry.level }}">
+      <span class="ts">{{ entry.ts }}</span>
+      [{{ entry.level }}] {{ entry.message }}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Soft refresh every 30 s to update statuses via poll fallback
+  setTimeout(() => location.reload(), 30000);
+</script>
+{% endblock %}

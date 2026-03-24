@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Security{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom:20px">🔒 Security Tests &amp; Auto-Fix</h1>
+
+<div class="grid-2">
+
+  <!-- ── Security Tests ──────────────────────────────────────────── -->
+  <div class="card">
+    <h2>🔍 Безпекові тести</h2>
+
+    <h3>🎯 Ціль перевірки</h3>
+    <input id="scan-target" class="target-input" type="text"
+           value="192.168.1.0/24"
+           placeholder="IP, CIDR або hostname">
+
+    <div style="margin:14px 0">
+      <button class="btn btn-warn"    onclick="runTest('scan_ports')">🔌 Перевірити відкриті порти (nmap)</button>
+      <button class="btn btn-warn"    onclick="runTest('check_vulns')">⚠️ Перевірити уразливості</button>
+      <button class="btn btn-primary" onclick="runTest('ping_all')">📡 Перевірити доступність (ping)</button>
+      <button class="btn btn-primary" onclick="runTest('check_acl')">🛡️ Перевірити ACL</button>
+    </div>
+
+    <h3>📋 Результат</h3>
+    <div id="test-output" class="output-box">Натисни кнопку для запуску тесту…</div>
+  </div>
+
+  <!-- ── Auto-Fix ─────────────────────────────────────────────────── -->
+  <div class="card">
+    <h2>🔧 Автовиправлення</h2>
+
+    <div style="margin:14px 0">
+      <button class="btn btn-danger"  onclick="runFix('close_ports')">🔒 Закрити відкриті порти (iptables)</button>
+      <button class="btn btn-danger"  onclick="runFix('enable_firewall')">🔥 Включити брандмауер (ufw)</button>
+      <button class="btn btn-success" onclick="runFix('update_patches')">📦 Оновити патчі (apt update)</button>
+      <button class="btn btn-warn"    onclick="runFix('reset_acl')">↩️ Скинути конфіг ACL</button>
+    </div>
+
+    <h3>📋 Результат виправлення</h3>
+    <div id="fix-output" class="output-box">Натисни кнопку для виконання виправлення…</div>
+  </div>
+
+</div>
+
+<!-- Operation log -->
+<div class="card">
+  <h2>📋 Журнал операцій</h2>
+  <div id="logs-box" class="output-box" style="color:var(--text)">
+    {% for entry in logs %}
+    <div class="log-entry log-{{ entry.level }}">
+      <span class="ts">{{ entry.ts }}</span>
+      [{{ entry.level }}] {{ entry.message }}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function _setOutput(elId, text, isError) {
+  const el = document.getElementById(elId);
+  el.textContent = text;
+  el.style.color = isError ? 'var(--red)' : 'var(--green)';
+}
+
+function _setLoading(elId) {
+  const el = document.getElementById(elId);
+  el.textContent = '⏳ Виконується…';
+  el.style.color = 'var(--yellow)';
+}
+
+function runTest(name) {
+  const target = document.getElementById('scan-target').value.trim();
+  _setLoading('test-output');
+  fetch('/api/security/' + name, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target })
+  })
+  .then(r => r.json())
+  .then(d => {
+    _setOutput('test-output', d.output || 'No output', d.status !== 'ok');
+    _refreshLogs();
+  })
+  .catch(err => _setOutput('test-output', 'Fetch error: ' + err, true));
+}
+
+function runFix(name) {
+  _setLoading('fix-output');
+  fetch('/api/autofix/' + name, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  })
+  .then(r => r.json())
+  .then(d => {
+    _setOutput('fix-output', d.output || 'No output', d.status !== 'ok');
+    _refreshLogs();
+  })
+  .catch(err => _setOutput('fix-output', 'Fetch error: ' + err, true));
+}
+
+function _refreshLogs() {
+  fetch('/api/logs')
+    .then(r => r.json())
+    .then(logs => {
+      const box = document.getElementById('logs-box');
+      box.innerHTML = logs.map(l =>
+        `<div class="log-entry log-${l.level}">` +
+        `<span class="ts">${l.ts}</span> [${l.level}] ${l.message}</div>`
+      ).join('');
+    })
+    .catch(() => {});
+}
+</script>
+{% endblock %}

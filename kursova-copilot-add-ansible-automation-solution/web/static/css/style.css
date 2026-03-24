@@ -1,0 +1,183 @@
+/* ─── Dark theme ─────────────────────────────────────────────────────── */
+:root {
+  --bg:        #1a1a2e;
+  --surface:   #16213e;
+  --surface2:  #0f3460;
+  --accent:    #e94560;
+  --accent2:   #533483;
+  --text:      #e0e0e0;
+  --muted:     #888;
+  --green:     #2ecc71;
+  --red:       #e74c3c;
+  --yellow:    #f39c12;
+  --border:    #2a2a4a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Courier New', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ─── Navbar ─────────────────────────────────────────────────────────── */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--surface);
+  border-bottom: 2px solid var(--accent);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-brand { font-size: 1.2em; font-weight: bold; color: var(--accent); }
+.nav-links  { display: flex; gap: 8px; }
+.nav-link {
+  padding: 8px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--muted);
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+.nav-link:hover,
+.nav-link.active { color: var(--text); background: var(--surface2); border-color: var(--accent2); }
+
+/* ─── Layout ──────────────────────────────────────────────────────────── */
+.container { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+.card {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+}
+.card h2 { margin-bottom: 16px; color: var(--accent); font-size: 1.1em; }
+.card h3 { margin-bottom: 10px; color: var(--muted); font-size: 0.9em; }
+
+/* ─── Table ───────────────────────────────────────────────────────────── */
+table { border-collapse: collapse; width: 100%; font-size: 0.88em; }
+th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+th { background: var(--surface2); color: var(--text); font-weight: bold; }
+tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+tr:hover          { background: rgba(255,255,255,0.06); }
+
+/* ─── Badges ──────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+.badge-ok   { background: rgba(46,204,113,.2); color: var(--green);  border: 1px solid var(--green); }
+.badge-err  { background: rgba(231,76,60,.2);  color: var(--red);    border: 1px solid var(--red); }
+.badge-warn { background: rgba(243,156,18,.2); color: var(--yellow); border: 1px solid var(--yellow); }
+
+/* ─── Zone badges ─────────────────────────────────────────────────────── */
+.zone-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; }
+.zone-core      { background: rgba(155,89,182,.3); color: #9b59b6; border: 1px solid #9b59b6; }
+.zone-access    { background: rgba(52,152,219,.3); color: #3498db; border: 1px solid #3498db; }
+.zone-perimeter { background: rgba(243,156,18,.3); color: var(--yellow); border: 1px solid var(--yellow); }
+.zone-dmz       { background: rgba(231,76,60,.3);  color: var(--red);    border: 1px solid var(--red); }
+
+/* ─── Buttons ─────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-block;
+  padding: 9px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 0.88em;
+  transition: all 0.2s;
+  margin: 4px;
+}
+.btn-primary { background: var(--accent2); color: var(--text); }
+.btn-primary:hover { background: #6b45a3; }
+.btn-danger  { background: rgba(231,76,60,.3);  color: var(--red);    border: 1px solid var(--red); }
+.btn-danger:hover  { background: rgba(231,76,60,.5); }
+.btn-success { background: rgba(46,204,113,.3); color: var(--green);  border: 1px solid var(--green); }
+.btn-success:hover { background: rgba(46,204,113,.5); }
+.btn-warn    { background: rgba(243,156,18,.3); color: var(--yellow); border: 1px solid var(--yellow); }
+.btn-warn:hover    { background: rgba(243,156,18,.5); }
+
+/* ─── Output box ──────────────────────────────────────────────────────── */
+.output-box {
+  background: #0a0a1a;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82em;
+  color: var(--green);
+  white-space: pre-wrap;
+  word-break: break-all;
+  min-height: 80px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ─── Stat grid ───────────────────────────────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+.stat-value { font-size: 1.8em; font-weight: bold; }
+.stat-label { font-size: 0.75em; color: var(--muted); margin-top: 4px; }
+
+/* ─── Grid layouts ────────────────────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+/* ─── Topology SVG ────────────────────────────────────────────────────── */
+#topology-svg {
+  width: 100%;
+  height: 520px;
+  background: #0a0a1a;
+  border-radius: 4px;
+}
+
+/* ─── Logs ────────────────────────────────────────────────────────────── */
+.log-entry { padding: 3px 0; border-bottom: 1px solid var(--border); font-size: 0.8em; }
+.log-entry .ts { color: var(--muted); margin-right: 8px; }
+.log-INFO  { color: var(--text); }
+.log-WARN  { color: var(--yellow); }
+.log-ERROR { color: var(--red); }
+
+/* ─── Target input ────────────────────────────────────────────────────── */
+.target-input {
+  width: 100%;
+  padding: 8px;
+  background: #0a0a1a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  margin-top: 6px;
+}
+.target-input:focus { outline: 1px solid var(--accent2); }
+
+/* ─── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .nav-links { display: none; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+}

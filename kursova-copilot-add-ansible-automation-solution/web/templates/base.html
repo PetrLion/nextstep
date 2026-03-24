@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Network Monitor{% endblock %} | GNS3 Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">🖧 GNS3 Network Monitor</div>
+    <div class="nav-links">
+      <a href="/"          class="nav-link {% if active_tab == 'dashboard' %}active{% endif %}">📊 Dashboard</a>
+      <a href="/topology"  class="nav-link {% if active_tab == 'topology'  %}active{% endif %}">🗺️ Topology</a>
+      <a href="/security"  class="nav-link {% if active_tab == 'security'  %}active{% endif %}">🔒 Security</a>
+    </div>
+    <div class="nav-status">
+      <span id="ws-status" class="badge badge-warn">⚡ Connecting...</span>
+    </div>
+  </nav>
+
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+
+  {% if socketio_available %}
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const socket = io();
+    socket.on('connect', () => {
+      const el = document.getElementById('ws-status');
+      el.textContent = '✅ Live';
+      el.className = 'badge badge-ok';
+    });
+    socket.on('disconnect', () => {
+      const el = document.getElementById('ws-status');
+      el.textContent = '❌ Offline';
+      el.className = 'badge badge-err';
+    });
+    socket.on('status_update', data => _applyStatuses(data.hosts));
+
+    function _applyStatuses(hosts) {
+      for (const [id, info] of Object.entries(hosts)) {
+        const el = document.getElementById('status-' + id);
+        if (el) {
+          el.textContent = info.status;
+          el.className = 'badge ' + (info.status === 'UP' ? 'badge-ok'
+                                  : info.status === 'DOWN' ? 'badge-err'
+                                  : 'badge-warn');
+        }
+      }
+    }
+  </script>
+  {% else %}
+  <script>
+    const wsEl = document.getElementById('ws-status');
+    wsEl.textContent = '📊 Polling';
+    wsEl.className = 'badge badge-warn';
+
+    function _applyStatuses(hosts) {
+      hosts.forEach(h => {
+        const el = document.getElementById('status-' + h.id);
+        if (el) {
+          el.textContent = h.status;
+          el.className = 'badge ' + (h.status === 'UP' ? 'badge-ok'
+                                   : h.status === 'DOWN' ? 'badge-err'
+                                   : 'badge-warn');
+        }
+      });
+    }
+    setInterval(() => {
+      fetch('/api/hosts').then(r => r.json()).then(_applyStatuses).catch(() => {});
+    }, 30000);
+  </script>
+  {% endif %}
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
