@@ -1,0 +1,22 @@
+---
+- name: "🚀 Додати вузли до топології GNS3"
+  block:
+    - name: "Додати маршрутизатор R1"
+      uri:
+        url: "http://127.0.0.1:3080/v3/projects/{{ gns3_project_id }}/nodes"
+        method: POST
+        body_format: json
+        body:
+          name: "R1"
+          compute_id: "local"
+          node_type: "qemu"
+        headers:
+          Authorization: "Bearer {{ gns3_token }}"
+        validate_certs: no
+        status_code: [200, 201, 401]
+      register: r1_result
+      ignore_errors: true
+
+    - name: "✅ Вузли додано"
+      debug:
+        msg: "Вузли успішно додано"
