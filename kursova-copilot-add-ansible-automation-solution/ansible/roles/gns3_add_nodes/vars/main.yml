@@ -1,0 +1,23 @@
+---
+# Змінні для ролі gns3_add_nodes
+gns3_project_dir: "/tmp/gns3_project"
+gns3_project_name: "Network_Topology"
+gns3_project_file: "{{ gns3_project_dir }}/{{ gns3_project_name }}.gns3"
+
+gns3_routers:
+  - name: "R1"
+    x: 0
+    y: 0
+    console: 5001
+  - name: "R2"
+    x: 200
+    y: 0
+    console: 5002
+  - name: "R3"
+    x: 0
+    y: 200
+    console: 5003
+  - name: "R4"
+    x: 200
+    y: 200
+    console: 5004

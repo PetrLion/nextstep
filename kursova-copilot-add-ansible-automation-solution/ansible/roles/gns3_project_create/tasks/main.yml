@@ -1,0 +1,35 @@
+---
+- name: "📁 Створити директорію GNS3 проекту"
+  file:
+    path: "{{ gns3_project_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "📝 Створити порожній GNS3 проект (JSON)"
+  copy:
+    dest: "{{ gns3_project_file }}"
+    force: false
+    content: |
+      {
+        "auto_close": false,
+        "auto_open": false,
+        "auto_start": false,
+        "name": "{{ gns3_project_name }}",
+        "project_id": "00000000-0000-0000-0000-000000000001",
+        "revision": 9,
+        "scene_height": 1000,
+        "scene_width": 2000,
+        "zoom": 100,
+        "topology": {
+          "computes": [],
+          "drawings": [],
+          "links": [],
+          "nodes": []
+        },
+        "type": "topology",
+        "version": "2.2.0"
+      }
+
+- name: "✅ GNS3 проект готовий"
+  debug:
+    msg: "Проект створено: {{ gns3_project_file }}"

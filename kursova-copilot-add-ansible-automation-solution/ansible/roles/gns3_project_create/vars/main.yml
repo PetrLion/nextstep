@@ -1,0 +1,5 @@
+---
+# Змінні для ролі gns3_project_create
+gns3_project_dir: "/tmp/gns3_project"
+gns3_project_name: "Network_Topology"
+gns3_project_file: "{{ gns3_project_dir }}/{{ gns3_project_name }}.gns3"
