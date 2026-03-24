@@ -14,20 +14,37 @@
 
       existing_names = {n["name"] for n in project["topology"]["nodes"]}
 
+      # Роутери R1-R4 (OSPF Area 0, QEMU)
       routers = [
-          {"name": "R1", "x": 0,   "y": 0,   "console": 5001},
-          {"name": "R2", "x": 200, "y": 0,   "console": 5002},
-          {"name": "R3", "x": 0,   "y": 200, "console": 5003},
-          {"name": "R4", "x": 200, "y": 200, "console": 5004},
+          {"name": "R1", "x": 400,  "y": 300, "console": 5001, "node_type": "qemu",  "symbol": ":/symbols/router.svg",   "adapters": 6},
+          {"name": "R2", "x": 150,  "y": 100, "console": 5002, "node_type": "qemu",  "symbol": ":/symbols/router.svg",   "adapters": 6},
+          {"name": "R3", "x": 650,  "y": 100, "console": 5003, "node_type": "qemu",  "symbol": ":/symbols/router.svg",   "adapters": 6},
+          {"name": "R4", "x": 400,  "y": 500, "console": 5004, "node_type": "qemu",  "symbol": ":/symbols/router.svg",   "adapters": 6},
       ]
 
+      # Клієнтські ПК (VPCS, Access Zone)
+      clients = [
+          {"name": "PC1", "x": 0,   "y": 0,   "console": 5010, "node_type": "vpcs", "symbol": ":/symbols/computer.svg", "adapters": 1},
+          {"name": "PC2", "x": 200, "y": 0,   "console": 5011, "node_type": "vpcs", "symbol": ":/symbols/computer.svg", "adapters": 1},
+          {"name": "PC3", "x": 700, "y": 0,   "console": 5012, "node_type": "vpcs", "symbol": ":/symbols/computer.svg", "adapters": 1},
+      ]
+
+      # DMZ сервери (QEMU)
+      servers = [
+          {"name": "SRV-WEB",   "x": 150,  "y": 700, "console": 5020, "node_type": "qemu", "symbol": ":/symbols/server.svg", "adapters": 2},
+          {"name": "SRV-REDIS", "x": 400,  "y": 700, "console": 5021, "node_type": "qemu", "symbol": ":/symbols/server.svg", "adapters": 2},
+          {"name": "SRV-DB",    "x": 650,  "y": 700, "console": 5022, "node_type": "qemu", "symbol": ":/symbols/server.svg", "adapters": 2},
+      ]
+
+      all_nodes = routers + clients + servers
       added = []
-      for idx, r in enumerate(routers, start=1):
-          if r["name"] in existing_names:
+
+      for node_def in all_nodes:
+          if node_def["name"] in existing_names:
               continue
           node = {
               "compute_id": "local",
-              "console": r["console"],
+              "console": node_def["console"],
               "console_type": "telnet",
               "custom_adapters": [],
               "first_port_name": None,
@@ -35,26 +52,25 @@
               "label": {
                   "rotation": 0,
                   "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-                  "text": r["name"],
+                  "text": node_def["name"],
                   "x": -25,
                   "y": -25
               },
               "locked": False,
-              "name": r["name"],
+              "name": node_def["name"],
               "node_id": str(uuid.uuid4()),
-              "node_type": "qemu",
+              "node_type": node_def["node_type"],
               "properties": {
-                  "adapters": 4,
-                  "memory": 256,
-                  "name": r["name"]
+                  "adapters": node_def["adapters"],
+                  "name": node_def["name"]
               },
-              "x": r["x"],
-              "y": r["y"],
+              "x": node_def["x"],
+              "y": node_def["y"],
               "width": 72,
-              "symbol": ":/symbols/router.svg"
+              "symbol": node_def["symbol"]
           }
           project["topology"]["nodes"].append(node)
-          added.append(r["name"])
+          added.append(node_def["name"])
 
       with open(project_file, 'w') as f:
           json.dump(project, f, indent=2)
@@ -64,11 +80,11 @@
       else:
           print("All nodes already present")
 
-- name: "🖧 Додати вузли R1-R4 до GNS3 проекту через JSON"
+- name: "🖧 Додати всі вузли до GNS3 проекту через JSON"
   command: python3 /tmp/gns3_add_nodes.py
   register: add_nodes_result
 
-- name: "✅ Вузли R1-R4 додано до JSON"
+- name: "✅ Вузли додано до JSON"
   debug:
     msg: "{{ add_nodes_result.stdout }}"
 

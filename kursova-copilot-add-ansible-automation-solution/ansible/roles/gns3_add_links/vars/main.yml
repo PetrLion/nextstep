@@ -4,33 +4,77 @@ gns3_project_dir: "/tmp/gns3_project"
 gns3_project_name: "Network_Topology"
 gns3_project_file: "{{ gns3_project_dir }}/{{ gns3_project_name }}.gns3"
 
-# Замкнене кільце: R1 ↔ R2 ↔ R3 ↔ R4 ↔ R1
+# Топологія: R1 (Core) - зірка + кінцеві пристрої
+# R1 e2/0 --- R2 e0/0  (Core ↔ Access)
+# R1 e1/0 --- R3 e1/0  (Core ↔ Restricted)
+# R1 e0/0 --- R4 e4/0  (Core ↔ DMZ)
+# R2 e0/1 --- PC1      (Access ↔ PC1)
+# R2 e0/2 --- PC2      (Access ↔ PC2)
+# R3 e0/1 --- PC3      (Restricted ↔ PC3)
+# R4 e0/1 --- SRV-WEB  (DMZ ↔ SRV-WEB)
+# R4 e0/2 --- SRV-REDIS(DMZ ↔ SRV-REDIS)
+# R4 e0/3 --- SRV-DB   (DMZ ↔ SRV-DB)
 gns3_links:
   - node_a: "R1"
-    adapter_a: 0
+    adapter_a: 2
     port_a: 0
     node_b: "R2"
     adapter_b: 0
     port_b: 0
-    description: "R1-R2 ring link"
-  - node_a: "R2"
+    description: "R1 e2/0 --- R2 e0/0 (Core-Access)"
+  - node_a: "R1"
     adapter_a: 1
     port_a: 0
     node_b: "R3"
-    adapter_b: 0
-    port_b: 0
-    description: "R2-R3 ring link"
-  - node_a: "R3"
-    adapter_a: 1
-    port_a: 0
-    node_b: "R4"
-    adapter_b: 0
-    port_b: 0
-    description: "R3-R4 ring link"
-  - node_a: "R4"
-    adapter_a: 1
-    port_a: 0
-    node_b: "R1"
     adapter_b: 1
     port_b: 0
-    description: "R4-R1 ring link"
+    description: "R1 e1/0 --- R3 e1/0 (Core-Restricted)"
+  - node_a: "R1"
+    adapter_a: 0
+    port_a: 0
+    node_b: "R4"
+    adapter_b: 4
+    port_b: 0
+    description: "R1 e0/0 --- R4 e4/0 (Core-DMZ)"
+  - node_a: "R2"
+    adapter_a: 0
+    port_a: 1
+    node_b: "PC1"
+    adapter_b: 0
+    port_b: 0
+    description: "R2 e0/1 --- PC1 (Access-PC1)"
+  - node_a: "R2"
+    adapter_a: 0
+    port_a: 2
+    node_b: "PC2"
+    adapter_b: 0
+    port_b: 0
+    description: "R2 e0/2 --- PC2 (Access-PC2)"
+  - node_a: "R3"
+    adapter_a: 0
+    port_a: 1
+    node_b: "PC3"
+    adapter_b: 0
+    port_b: 0
+    description: "R3 e0/1 --- PC3 (Restricted-PC3)"
+  - node_a: "R4"
+    adapter_a: 0
+    port_a: 1
+    node_b: "SRV-WEB"
+    adapter_b: 0
+    port_b: 0
+    description: "R4 e0/1 --- SRV-WEB (DMZ-Web)"
+  - node_a: "R4"
+    adapter_a: 0
+    port_a: 2
+    node_b: "SRV-REDIS"
+    adapter_b: 0
+    port_b: 0
+    description: "R4 e0/2 --- SRV-REDIS (DMZ-Redis)"
+  - node_a: "R4"
+    adapter_a: 0
+    port_a: 3
+    node_b: "SRV-DB"
+    adapter_b: 0
+    port_b: 0
+    description: "R4 e0/3 --- SRV-DB (DMZ-DB)"

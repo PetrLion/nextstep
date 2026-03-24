@@ -1,0 +1,61 @@
+---
+# Змінні для ролі gns3_configure_security
+gns3_project_dir: "/tmp/gns3_project"
+gns3_project_name: "Network_Topology"
+gns3_project_file: "{{ gns3_project_dir }}/{{ gns3_project_name }}.gns3"
+gns3_security_file: "{{ gns3_project_dir }}/security_config.json"
+
+# Security Zones
+security_zones:
+  ospf_area0:
+    name: "OSPF Area 0"
+    nodes: ["R1", "R2", "R3", "R4"]
+    description: "Core routing zone"
+  access_zone:
+    name: "Access Zone"
+    nodes: ["R2", "PC1", "PC2"]
+    subnet: "10.0.20.0/23"
+    description: "User access zone"
+  restricted_zone:
+    name: "Restricted Zone"
+    nodes: ["R3", "PC3"]
+    subnet: "3.3.3.0/24"
+    description: "Restricted access zone"
+  dmz:
+    name: "DMZ"
+    nodes: ["R4", "SRV-WEB", "SRV-REDIS", "SRV-DB"]
+    subnet: "10.0.40.0/22"
+    description: "DMZ - public-facing servers"
+
+# ACL Rules (базова безпека)
+acl_rules:
+  # Access Zone -> DMZ: дозволити тільки HTTP/HTTPS до SRV-WEB
+  - name: "ACL-ACCESS-TO-DMZ-WEB"
+    src_zone: "access_zone"
+    dst_zone: "dmz"
+    dst_host: "SRV-WEB"
+    permit_ports: [80, 443]
+    action: "permit"
+  # Access Zone -> DMZ: заборонити прямий доступ до Redis та DB
+  - name: "ACL-DENY-ACCESS-TO-REDIS"
+    src_zone: "access_zone"
+    dst_zone: "dmz"
+    dst_host: "SRV-REDIS"
+    permit_ports: [6379]
+    action: "deny"
+  - name: "ACL-DENY-ACCESS-TO-DB"
+    src_zone: "access_zone"
+    dst_zone: "dmz"
+    dst_host: "SRV-DB"
+    permit_ports: [5432]
+    action: "deny"
+  # Restricted Zone -> DMZ: повна заборона
+  - name: "ACL-DENY-RESTRICTED-TO-DMZ"
+    src_zone: "restricted_zone"
+    dst_zone: "dmz"
+    action: "deny"
+  # DMZ -> Access Zone: заборонити ініціацію з'єднань
+  - name: "ACL-DENY-DMZ-INITIATE-ACCESS"
+    src_zone: "dmz"
+    dst_zone: "access_zone"
+    action: "deny"

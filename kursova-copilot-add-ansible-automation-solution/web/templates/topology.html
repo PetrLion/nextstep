@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GNS3 Topology Monitor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f0f2f5; color: #2e3436; }
+    header {
+      background: #2e3436; color: #fff; padding: 14px 30px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    header h1 { margin: 0; font-size: 1.3rem; }
+    .ts { margin-left: auto; font-size: 0.8rem; opacity: .7; }
+
+    main { padding: 24px 30px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+
+    .card {
+      background: #fff; border-radius: 8px; padding: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    }
+    .card h2 { margin: 0 0 14px; font-size: 1rem; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    th, td { border: 1px solid #ddd; padding: 7px 10px; text-align: left; }
+    th { background: #2e3436; color: #fff; }
+    tr:nth-child(even) { background: #f9f9f9; }
+
+    .badge {
+      display: inline-block; padding: 2px 9px; border-radius: 10px;
+      font-size: 0.8em; font-weight: bold; white-space: nowrap;
+    }
+    .ok   { background: #8ae234; color: #1a1a1a; }
+    .warn { background: #fce94f; color: #1a1a1a; }
+    .err  { background: #ef2929; color: #fff; }
+
+    /* Security zones legend */
+    .zone-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .zone-pill {
+      padding: 4px 12px; border-radius: 12px; font-size: 0.8rem;
+      font-weight: bold; color: #fff;
+    }
+
+    /* Topology graph */
+    #topo-canvas {
+      width: 100%; height: 520px; position: relative;
+      background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px;
+      overflow: hidden;
+    }
+    .topo-node {
+      position: absolute; transform: translate(-50%, -50%);
+      text-align: center; cursor: default;
+    }
+    .topo-node .icon {
+      font-size: 2rem; line-height: 1;
+      width: 54px; height: 54px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 3px solid #ccc; background: #fff;
+      margin: 0 auto;
+    }
+    .topo-node .lbl {
+      font-size: 0.72rem; font-weight: bold;
+      margin-top: 4px; white-space: nowrap;
+    }
+    .topo-node .zone-tag {
+      font-size: 0.62rem; opacity: .75;
+    }
+    /* zone colours for node borders */
+    .zone-ospf     { border-color: #3465a4 !important; }
+    .zone-access   { border-color: #4e9a06 !important; }
+    .zone-restricted { border-color: #c4a000 !important; }
+    .zone-dmz      { border-color: #cc0000 !important; }
+
+    svg#topo-svg {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    .acl-permit { color: #4e9a06; font-weight: bold; }
+    .acl-deny   { color: #ef2929; font-weight: bold; }
+
+    .err-banner {
+      background: #ef2929; color: #fff; padding: 10px 20px;
+      border-radius: 6px; margin-bottom: 16px;
+    }
+
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:1.6rem">🖧</span>
+  <h1>GNS3 Topology Monitor</h1>
+  <span class="ts">{{ ts }}</span>
+</header>
+
+<main>
+  {% if error is defined and error %}
+  <div class="err-banner">⚠️ {{ error }}</div>
+  {% endif %}
+
+  <!-- Project info -->
+  <div class="card" style="margin-bottom:20px">
+    <h2>📋 Проект</h2>
+    <table>
+      <tr><th>Параметр</th><th>Значення</th></tr>
+      <tr><td>Назва</td><td>{{ project_name }}</td></tr>
+      <tr><td>Файл проекту</td><td><code>{{ project_file }}</code></td></tr>
+      <tr>
+        <td>Статус</td>
+        <td><span class="badge {{ 'ok' if file_ok else 'err' }}">
+          {{ '✅ знайдено' if file_ok else '❌ не знайдено' }}
+        </span></td>
+      </tr>
+      <tr><td>Версія GNS3</td><td>{{ version }}</td></tr>
+      <tr><td>Вузлів</td><td>{{ nodes | length }}</td></tr>
+      <tr><td>З'єднань</td><td>{{ links | length }}</td></tr>
+    </table>
+  </div>
+
+  <!-- Topology graph + tables side by side on wide screens -->
+  <div class="grid">
+
+    <!-- Visual topology graph -->
+    <div class="card" style="grid-column: 1 / -1">
+      <h2>🗺️ Топологія мережі</h2>
+
+      <!-- Zone legend -->
+      <div class="zone-legend">
+        {% for zk, zv in zones.items() %}
+        <span class="zone-pill" style="background:{{ zv.color }}">{{ zv.label }}</span>
+        {% endfor %}
+      </div>
+
+      <div id="topo-canvas">
+        <!-- SVG lines rendered by JS -->
+        <svg id="topo-svg"></svg>
+
+        {% if nodes %}
+        <!-- Hardcoded layout positions (% of canvas) matching Ansible vars -->
+        {% set layout = {
+          'R1':       (50, 43),
+          'R2':       (20, 16),
+          'R3':       (80, 16),
+          'R4':       (50, 70),
+          'PC1':      ( 5,  4),
+          'PC2':      (28,  4),
+          'PC3':      (88,  4),
+          'SRV-WEB':  (22, 93),
+          'SRV-REDIS':(50, 93),
+          'SRV-DB':   (78, 93)
+        } %}
+        {% set icons = {
+          'R1': '🔀', 'R2': '🔀', 'R3': '🔀', 'R4': '🔀',
+          'PC1': '💻', 'PC2': '💻', 'PC3': '💻',
+          'SRV-WEB': '🌐', 'SRV-REDIS': '🗄️', 'SRV-DB': '🗄️'
+        } %}
+        {% set zone_css = {
+          'OSPF Area 0': 'zone-ospf',
+          'Access Zone': 'zone-access',
+          'Restricted Zone': 'zone-restricted',
+          'DMZ': 'zone-dmz'
+        } %}
+
+        {% for n in nodes %}
+        {% set name = n.name %}
+        {% set pos = layout.get(name, (50, 50)) %}
+        {% set icon = icons.get(name, '📦') %}
+        {% set zcss = zone_css.get(n.zone, '') %}
+        <div class="topo-node"
+             style="left:{{ pos[0] }}%;top:{{ pos[1] }}%"
+             data-name="{{ name }}"
+             data-x="{{ pos[0] }}"
+             data-y="{{ pos[1] }}">
+          <div class="icon {{ zcss }}">{{ icon }}</div>
+          <div class="lbl">{{ name }}</div>
+          <div class="zone-tag">{{ n.zone }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="text-align:center;padding-top:30px;color:#888">
+          Вузлів немає. Запустіть: <code>./start_all.sh --ansible</code>
+        </p>
+        {% endif %}
+      </div><!-- /topo-canvas -->
+    </div><!-- /graph card -->
+
+    <!-- Nodes table -->
+    <div class="card">
+      <h2>🖧 Вузли ({{ nodes | length }})</h2>
+      {% if nodes %}
+      <table>
+        <tr><th>#</th><th>Ім'я</th><th>Тип</th><th>Console</th><th>Зона безпеки</th></tr>
+        {% for n in nodes %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ n.name }}</strong></td>
+          <td>{{ n.node_type }}</td>
+          <td>{{ n.console }}</td>
+          <td>{{ n.zone }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}
+      <p>Вузли відсутні.</p>
+      {% endif %}
+    </div>
+
+    <!-- Links table -->
+    <div class="card">
+      <h2>🔗 З'єднання ({{ links | length }})</h2>
+      {% if links %}
+      <table>
+        <tr><th>#</th><th>Вузол A</th><th>Інтерфейс</th><th>Вузол B</th><th>Інтерфейс</th></tr>
+        {% for l in links %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ l.node_a }}</td>
+          <td><code>{{ l.iface_a }}</code></td>
+          <td>{{ l.node_b }}</td>
+          <td><code>{{ l.iface_b }}</code></td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}
+      <p>З'єднання відсутні.</p>
+      {% endif %}
+    </div>
+
+    <!-- Security config -->
+    <div class="card" style="grid-column: 1 / -1">
+      <h2>🔒 Безпека</h2>
+      {% if security %}
+      <p>Сформовано: <strong>{{ security.generated_at }}</strong></p>
+
+      <h3 style="margin-top:16px">Зони безпеки</h3>
+      <table>
+        <tr><th>Зона</th><th>Вузли</th><th>Підмережа</th><th>Опис</th></tr>
+        {% for zk, zv in security.security_zones.items() %}
+        <tr>
+          <td><strong>{{ zv.name }}</strong></td>
+          <td>{{ zv.nodes | join(', ') }}</td>
+          <td>{{ zv.subnet | default('—') }}</td>
+          <td>{{ zv.description }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      <h3 style="margin-top:16px">ACL правила</h3>
+      <table>
+        <tr><th>Назва</th><th>Джерело</th><th>Призначення</th><th>Порти</th><th>Дія</th></tr>
+        {% for rule in security.acl_rules %}
+        <tr>
+          <td>{{ rule.name }}</td>
+          <td>{{ rule.src_zone }}</td>
+          <td>{{ rule.dst_zone }}{% if rule.dst_host is defined %} / {{ rule.dst_host }}{% endif %}</td>
+          <td>{{ rule.permit_ports | join(', ') if rule.permit_ports is defined else '—' }}</td>
+          <td>
+            <span class="acl-{{ rule.action }}">
+              {{ '✅ permit' if rule.action == 'permit' else '❌ deny' }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      {% if security.warnings %}
+      <p class="badge warn" style="margin-top:10px">
+        ⚠️ Попередження: {{ security.warnings | join('; ') }}
+      </p>
+      {% endif %}
+
+      {% else %}
+      <p>Конфігурація безпеки не знайдена.
+         Запустіть Ansible playbook щоб згенерувати <code>security_config.json</code>.</p>
+      {% endif %}
+    </div><!-- /security card -->
+
+    <!-- Quick start -->
+    <div class="card" style="grid-column: 1 / -1">
+      <h2>🚀 Швидкий старт</h2>
+      <pre>./start_all.sh --ansible   # повний запуск з Ansible автоматизацією
+./start_all.sh             # тільки GNS3 + веб-інтерфейс</pre>
+    </div>
+
+  </div><!-- /grid -->
+</main>
+
+<script>
+// Draw SVG lines between topology nodes
+(function () {
+  const canvas = document.getElementById('topo-canvas');
+  const svg = document.getElementById('topo-svg');
+  if (!canvas || !svg) return;
+
+  // Build name -> {x%, y%} map from DOM
+  const pos = {};
+  canvas.querySelectorAll('.topo-node').forEach(function(el) {
+    pos[el.dataset.name] = {
+      x: parseFloat(el.dataset.x),
+      y: parseFloat(el.dataset.y)
+    };
+  });
+
+  // Links injected from Flask (Jinja renders JS array)
+  const links = [
+    {% for l in links %}
+    { a: {{ l.node_a | tojson }}, b: {{ l.node_b | tojson }} },
+    {% endfor %}
+  ];
+
+  const W = canvas.offsetWidth  || 800;
+  const H = canvas.offsetHeight || 520;
+
+  links.forEach(function(lnk) {
+    const pa = pos[lnk.a];
+    const pb = pos[lnk.b];
+    if (!pa || !pb) return;
+    const x1 = pa.x / 100 * W;
+    const y1 = pa.y / 100 * H;
+    const x2 = pb.x / 100 * W;
+    const y2 = pb.y / 100 * H;
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', '#aaa');
+    line.setAttribute('stroke-width', '2');
+    svg.appendChild(line);
+  });
+})();
+</script>
+</body>
+</html>

@@ -4,20 +4,71 @@ gns3_project_dir: "/tmp/gns3_project"
 gns3_project_name: "Network_Topology"
 gns3_project_file: "{{ gns3_project_dir }}/{{ gns3_project_name }}.gns3"
 
+# Маршрутизатори (OSPF Area 0)
 gns3_routers:
   - name: "R1"
-    x: 0
-    y: 0
+    x: 400
+    y: 300
     console: 5001
+    symbol: ":/symbols/router.svg"
+    node_type: "qemu"
   - name: "R2"
+    x: 150
+    y: 100
+    console: 5002
+    symbol: ":/symbols/router.svg"
+    node_type: "qemu"
+  - name: "R3"
+    x: 650
+    y: 100
+    console: 5003
+    symbol: ":/symbols/router.svg"
+    node_type: "qemu"
+  - name: "R4"
+    x: 400
+    y: 500
+    console: 5004
+    symbol: ":/symbols/router.svg"
+    node_type: "qemu"
+
+# Клієнтські ПК (Access Zone, через R2 та R3)
+gns3_clients:
+  - name: "PC1"
+    x: 0
+    y: 0
+    console: 5010
+    symbol: ":/symbols/computer.svg"
+    node_type: "vpcs"
+  - name: "PC2"
     x: 200
     y: 0
-    console: 5002
-  - name: "R3"
-    x: 0
-    y: 200
-    console: 5003
-  - name: "R4"
-    x: 200
-    y: 200
-    console: 5004
+    console: 5011
+    symbol: ":/symbols/computer.svg"
+    node_type: "vpcs"
+  - name: "PC3"
+    x: 700
+    y: 0
+    console: 5012
+    symbol: ":/symbols/computer.svg"
+    node_type: "vpcs"
+
+# DMZ Сервери (через R4)
+gns3_servers:
+  - name: "SRV-WEB"
+    x: 150
+    y: 700
+    console: 5020
+    symbol: ":/symbols/server.svg"
+    node_type: "qemu"
+  - name: "SRV-REDIS"
+    x: 400
+    y: 700
+    console: 5021
+    symbol: ":/symbols/server.svg"
+    node_type: "qemu"
+  - name: "SRV-DB"
+    x: 650
+    y: 700
+    console: 5022
+    symbol: ":/symbols/server.svg"
+    node_type: "qemu"

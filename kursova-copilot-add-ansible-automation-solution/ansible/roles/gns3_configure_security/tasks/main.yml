@@ -1,0 +1,124 @@
+---
+- name: "🔒 Підготувати скрипт конфігурації безпеки"
+  copy:
+    dest: "/tmp/gns3_configure_security.py"
+    mode: "0755"
+    content: |
+      #!/usr/bin/env python3
+      """Generate ACL security config and write to security_config.json."""
+      import json
+      import os
+      from datetime import datetime
+
+      project_file = "{{ gns3_project_file }}"
+      security_file = "{{ gns3_security_file }}"
+
+      with open(project_file, 'r') as f:
+          project = json.load(f)
+
+      node_names = {n["name"] for n in project["topology"]["nodes"]}
+
+      security_zones = {
+          "ospf_area0": {
+              "name": "OSPF Area 0",
+              "nodes": ["R1", "R2", "R3", "R4"],
+              "description": "Core routing zone (1.1.1.0/24 - 4.4.4.0/24)"
+          },
+          "access_zone": {
+              "name": "Access Zone",
+              "nodes": ["R2", "PC1", "PC2"],
+              "subnet": "10.0.20.0/23",
+              "description": "User access zone"
+          },
+          "restricted_zone": {
+              "name": "Restricted Zone",
+              "nodes": ["R3", "PC3"],
+              "subnet": "3.3.3.0/24",
+              "description": "Restricted access zone"
+          },
+          "dmz": {
+              "name": "DMZ",
+              "nodes": ["R4", "SRV-WEB", "SRV-REDIS", "SRV-DB"],
+              "subnet": "10.0.40.0/22",
+              "description": "DMZ - public-facing servers"
+          }
+      }
+
+      acl_rules = [
+          {
+              "name": "ACL-ACCESS-TO-DMZ-WEB",
+              "description": "Access Zone may reach SRV-WEB on HTTP/HTTPS only",
+              "src_zone": "access_zone",
+              "dst_zone": "dmz",
+              "dst_host": "SRV-WEB",
+              "permit_ports": [80, 443],
+              "action": "permit"
+          },
+          {
+              "name": "ACL-DENY-ACCESS-TO-REDIS",
+              "description": "Access Zone cannot reach Redis directly",
+              "src_zone": "access_zone",
+              "dst_zone": "dmz",
+              "dst_host": "SRV-REDIS",
+              "permit_ports": [6379],
+              "action": "deny"
+          },
+          {
+              "name": "ACL-DENY-ACCESS-TO-DB",
+              "description": "Access Zone cannot reach PostgreSQL directly",
+              "src_zone": "access_zone",
+              "dst_zone": "dmz",
+              "dst_host": "SRV-DB",
+              "permit_ports": [5432],
+              "action": "deny"
+          },
+          {
+              "name": "ACL-DENY-RESTRICTED-TO-DMZ",
+              "description": "Restricted Zone has no access to DMZ",
+              "src_zone": "restricted_zone",
+              "dst_zone": "dmz",
+              "action": "deny"
+          },
+          {
+              "name": "ACL-DENY-DMZ-INITIATE-ACCESS",
+              "description": "DMZ servers cannot initiate connections to Access Zone",
+              "src_zone": "dmz",
+              "dst_zone": "access_zone",
+              "action": "deny"
+          }
+      ]
+
+      # Validate all referenced nodes exist
+      warnings = []
+      for zone_key, zone in security_zones.items():
+          for node in zone["nodes"]:
+              if node not in node_names:
+                  warnings.append(f"WARNING: node '{node}' in zone '{zone_key}' not found in topology")
+
+      security_config = {
+          "generated_at": datetime.now().isoformat(),
+          "project_name": project.get("name"),
+          "security_zones": security_zones,
+          "acl_rules": acl_rules,
+          "warnings": warnings
+      }
+
+      os.makedirs(os.path.dirname(security_file), exist_ok=True)
+      with open(security_file, 'w') as f:
+          json.dump(security_config, f, indent=2)
+
+      print(f"Security config written to {security_file}")
+      print(f"Zones: {len(security_zones)}, ACL rules: {len(acl_rules)}")
+      if warnings:
+          for w in warnings:
+              print(w)
+      else:
+          print("All zone nodes validated successfully")
+
+- name: "🔒 Застосувати конфігурацію безпеки (ACL + зони)"
+  command: python3 /tmp/gns3_configure_security.py
+  register: security_result
+
+- name: "✅ Конфігурація безпеки готова"
+  debug:
+    msg: "{{ security_result.stdout }}"
