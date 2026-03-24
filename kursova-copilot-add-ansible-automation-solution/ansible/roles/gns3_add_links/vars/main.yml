@@ -4,7 +4,10 @@ gns3_project_dir: "/tmp/gns3_project"
 gns3_project_name: "Network_Topology"
 gns3_project_file: "{{ gns3_project_dir }}/{{ gns3_project_name }}.gns3"
 
-# Замкнене кільце: R1 ↔ R2 ↔ R3 ↔ R4 ↔ R1
+# R1 (Core) connects to: R2, R3, R4
+# R2 (Access) connects to: PC1, PC2
+# R3 (Perimeter) connects to: PC-PERIMETER
+# R4 (DMZ) connects to: SRV-WEB, SRV-REDIS, SRV-DB
 gns3_links:
   - node_a: "R1"
     adapter_a: 0
@@ -12,25 +15,61 @@ gns3_links:
     node_b: "R2"
     adapter_b: 0
     port_b: 0
-    description: "R1-R2 ring link"
-  - node_a: "R2"
+    description: "R1-R2 Core to Access"
+  - node_a: "R1"
     adapter_a: 1
     port_a: 0
     node_b: "R3"
     adapter_b: 0
     port_b: 0
-    description: "R2-R3 ring link"
-  - node_a: "R3"
-    adapter_a: 1
+    description: "R1-R3 Core to Perimeter"
+  - node_a: "R1"
+    adapter_a: 2
     port_a: 0
     node_b: "R4"
     adapter_b: 0
     port_b: 0
-    description: "R3-R4 ring link"
+    description: "R1-R4 Core to DMZ"
+  - node_a: "R2"
+    adapter_a: 1
+    port_a: 0
+    node_b: "PC1"
+    adapter_b: 0
+    port_b: 0
+    description: "R2-PC1 Access to User 1"
+  - node_a: "R2"
+    adapter_a: 2
+    port_a: 0
+    node_b: "PC2"
+    adapter_b: 0
+    port_b: 0
+    description: "R2-PC2 Access to User 2"
+  - node_a: "R3"
+    adapter_a: 1
+    port_a: 0
+    node_b: "PC-PERIMETER"
+    adapter_b: 0
+    port_b: 0
+    description: "R3-PC-PERIMETER Perimeter to WAF/IDS"
   - node_a: "R4"
     adapter_a: 1
     port_a: 0
-    node_b: "R1"
-    adapter_b: 1
+    node_b: "SRV-WEB"
+    adapter_b: 0
     port_b: 0
-    description: "R4-R1 ring link"
+    description: "R4-SRV-WEB DMZ Web Server"
+  - node_a: "R4"
+    adapter_a: 2
+    port_a: 0
+    node_b: "SRV-REDIS"
+    adapter_b: 0
+    port_b: 0
+    description: "R4-SRV-REDIS DMZ Cache"
+  - node_a: "R4"
+    adapter_a: 3
+    port_a: 0
+    node_b: "SRV-DB"
+    adapter_b: 0
+    port_b: 0
+    description: "R4-SRV-DB DMZ Database"
+

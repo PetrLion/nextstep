@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Topology{% endblock %}
+
+{% block head %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom:20px">🗺️ Топологія мережі</h1>
+
+<!-- Zone legend -->
+<div class="card">
+  <h2>🔑 Зони безпеки</h2>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <span class="zone-badge zone-core">🔵 Core — R1 (OSPF Area 0)</span>
+    <span class="zone-badge zone-access">🔷 Access Zone — R2 (Користувачі: PC1, PC2)</span>
+    <span class="zone-badge zone-perimeter">🔶 Perimeter Zone — R3 (WAF/IDS: PC-PERIMETER)</span>
+    <span class="zone-badge zone-dmz">🔴 DMZ Zone — R4 (Сервери: SRV-WEB, SRV-REDIS, SRV-DB)</span>
+  </div>
+</div>
+
+<!-- Topology graph -->
+<div class="card">
+  <h2>📊 Граф топології</h2>
+  <svg id="topology-svg"></svg>
+</div>
+
+<!-- Node list -->
+<div class="card">
+  <h2>🖧 Пристрої мережі</h2>
+  <table>
+    <tr>
+      <th>Пристрій</th><th>Опис</th><th>Зона</th>
+      <th>IP</th><th>Console</th><th>Статус</th>
+    </tr>
+    {% for n in nodes_list %}
+    <tr>
+      <td><strong>{{ n.name }}</strong></td>
+      <td>{{ n.label }}</td>
+      <td><span class="zone-badge zone-{{ n.zone }}">{{ n.zone }}</span></td>
+      <td><code>{{ n.ip }}</code></td>
+      <td><code>{{ n.console }}</code></td>
+      <td><span id="status-{{ n.id }}" class="badge badge-warn">UNKNOWN</span></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/topology.js') }}"></script>
+<script>
+  const NODES = {{ nodes_json | safe }};
+  const LINKS = {{ links_json | safe }};
+
+  renderTopology(NODES, LINKS);
+
+  // Fetch and apply host statuses, update topology dots too
+  fetch('/api/hosts')
+    .then(r => r.json())
+    .then(hosts => {
+      _applyStatuses(hosts);
+      updateTopologyStatus(hosts);
+    })
+    .catch(() => {});
+</script>
+{% endblock %}

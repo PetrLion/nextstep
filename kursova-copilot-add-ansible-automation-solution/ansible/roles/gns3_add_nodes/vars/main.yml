@@ -4,20 +4,65 @@ gns3_project_dir: "/tmp/gns3_project"
 gns3_project_name: "Network_Topology"
 gns3_project_file: "{{ gns3_project_dir }}/{{ gns3_project_name }}.gns3"
 
+# Маршрутизатори (R1-R4)
 gns3_routers:
   - name: "R1"
-    x: 0
-    y: 0
+    label: "Core (OSPF Area 0)"
+    x: 400
+    y: 300
     console: 5001
   - name: "R2"
-    x: 200
-    y: 0
+    label: "Access"
+    x: 150
+    y: 500
     console: 5002
   - name: "R3"
-    x: 0
-    y: 200
+    label: "Perimeter (WAF/IDS)"
+    x: 400
+    y: 100
     console: 5003
   - name: "R4"
-    x: 200
-    y: 200
+    label: "DMZ"
+    x: 650
+    y: 500
     console: 5004
+
+# Хости: ПК користувачів, периметр, DMZ сервери
+gns3_hosts:
+  - name: "PC1"
+    label: "User 1"
+    zone: "access"
+    x: 50
+    y: 700
+    console: 5010
+  - name: "PC2"
+    label: "User 2"
+    zone: "access"
+    x: 250
+    y: 700
+    console: 5011
+  - name: "PC-PERIMETER"
+    label: "WAF/IDS"
+    zone: "perimeter"
+    x: 400
+    y: -100
+    console: 5012
+  - name: "SRV-WEB"
+    label: "Apache"
+    zone: "dmz"
+    x: 500
+    y: 700
+    console: 5020
+  - name: "SRV-REDIS"
+    label: "Redis"
+    zone: "dmz"
+    x: 650
+    y: 700
+    console: 5021
+  - name: "SRV-DB"
+    label: "PostgreSQL"
+    zone: "dmz"
+    x: 800
+    y: 700
+    console: 5022
+
