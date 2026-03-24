@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Results – GNS3 Security{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="fa-solid fa-list-check me-2"></i>Security Test Results</h4>
+  <div class="d-flex gap-2 flex-wrap">
+    <!-- Filter buttons -->
+    <button class="btn btn-sm btn-outline-secondary" onclick="filterResults(null)">All</button>
+    <button class="btn btn-sm btn-outline-success" onclick="filterResults('pass')">Pass</button>
+    <button class="btn btn-sm btn-outline-warning" onclick="filterResults('warning')">Warning</button>
+    <button class="btn btn-sm btn-outline-danger" onclick="filterResults('fail')">Fail</button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="exportCSV()">
+      <i class="fa-solid fa-file-csv me-1"></i>CSV
+    </button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="exportJSON()">
+      <i class="fa-solid fa-file-code me-1"></i>JSON
+    </button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover mb-0" id="results-table">
+        <thead>
+          <tr>
+            <th style="cursor:pointer" onclick="sortTable('test_name')">
+              Test Name <i class="fa-solid fa-sort ms-1 text-muted"></i>
+            </th>
+            <th style="cursor:pointer" onclick="sortTable('status')">
+              Status <i class="fa-solid fa-sort ms-1 text-muted"></i>
+            </th>
+            <th style="cursor:pointer" onclick="sortTable('severity')">
+              Severity <i class="fa-solid fa-sort ms-1 text-muted"></i>
+            </th>
+            <th style="cursor:pointer" onclick="sortTable('duration')">
+              Duration <i class="fa-solid fa-sort ms-1 text-muted"></i>
+            </th>
+            <th style="cursor:pointer" onclick="sortTable('timestamp')">
+              Timestamp <i class="fa-solid fa-sort ms-1 text-muted"></i>
+            </th>
+            <th>Details</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="results-tbody">
+          <tr id="results-empty-row">
+            <td colspan="7" class="text-center text-muted py-5">
+              <i class="fa-solid fa-flask fa-2x mb-2 d-block"></i>
+              No results yet. Run security tests from the <a href="/">Dashboard</a>.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content bg-card border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title" id="detailModalTitle">Result Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <pre class="text-light small" id="detailModalBody" style="max-height:500px;overflow:auto;"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/results.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    loadResults();
+    setInterval(loadResults, 30000);
+  });
+</script>
+{% endblock %}

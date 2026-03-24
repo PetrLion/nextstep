@@ -1,0 +1,54 @@
+/* ============================================================
+   GNS3 Security Dashboard – Topology / Cytoscape Styles
+   ============================================================ */
+
+#cy {
+  background: #0d1117;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Overlay (loading spinner) */
+.topo-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13,17,23,0.75);
+  z-index: 10;
+  border-radius: 0 0 8px 8px;
+  color: #e6edf3;
+  font-size: 0.9rem;
+}
+
+/* Node info panel */
+#node-info-panel dl {
+  margin-bottom: 0;
+}
+
+#node-info-panel dt {
+  color: #8b949e;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#node-info-panel dd {
+  color: #e6edf3;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+/* Cytoscape tooltip (custom) */
+.cy-tooltip {
+  position: absolute;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  color: #e6edf3;
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+}
