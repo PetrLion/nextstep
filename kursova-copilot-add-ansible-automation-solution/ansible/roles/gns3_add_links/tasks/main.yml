@@ -15,12 +15,26 @@
       # Будуємо словник: ім'я вузла -> node_id
       node_map = {n["name"]: n["node_id"] for n in project["topology"]["nodes"]}
 
-      # Список бажаних зв'язків (замкнене кільце: R1-R2-R3-R4-R1)
+      # Топологія: R1 (Core) - зірка
+      # R1 e2/0 --- R2 e0/0  (Core ↔ Access)
+      # R1 e1/0 --- R3 e1/0  (Core ↔ Restricted)
+      # R1 e0/0 --- R4 e4/0  (Core ↔ DMZ)
+      # R2 e0/1 --- PC1      (Access ↔ PC1, 10.0.20.0/24)
+      # R2 e0/2 --- PC2      (Access ↔ PC2, 10.0.21.0/24)
+      # R3 e0/1 --- PC3      (Restricted ↔ PC3, 10.0.30.0/24)
+      # R4 e0/1 --- SRV-WEB  (DMZ ↔ Apache 80/443, 10.0.40.0/24)
+      # R4 e0/2 --- SRV-REDIS(DMZ ↔ Redis 6379, 10.0.41.0/24)
+      # R4 e0/3 --- SRV-DB   (DMZ ↔ PostgreSQL 5432, 10.0.42.0/24)
       desired_links = [
-          {"node_a": "R1", "adapter_a": 0, "port_a": 0, "node_b": "R2", "adapter_b": 0, "port_b": 0},
-          {"node_a": "R2", "adapter_a": 1, "port_a": 0, "node_b": "R3", "adapter_b": 0, "port_b": 0},
-          {"node_a": "R3", "adapter_a": 1, "port_a": 0, "node_b": "R4", "adapter_b": 0, "port_b": 0},
-          {"node_a": "R4", "adapter_a": 1, "port_a": 0, "node_b": "R1", "adapter_b": 1, "port_b": 0},
+          {"node_a": "R1",  "adapter_a": 2, "port_a": 0, "node_b": "R2",       "adapter_b": 0, "port_b": 0},
+          {"node_a": "R1",  "adapter_a": 1, "port_a": 0, "node_b": "R3",       "adapter_b": 1, "port_b": 0},
+          {"node_a": "R1",  "adapter_a": 0, "port_a": 0, "node_b": "R4",       "adapter_b": 4, "port_b": 0},
+          {"node_a": "R2",  "adapter_a": 0, "port_a": 1, "node_b": "PC1",      "adapter_b": 0, "port_b": 0},
+          {"node_a": "R2",  "adapter_a": 0, "port_a": 2, "node_b": "PC2",      "adapter_b": 0, "port_b": 0},
+          {"node_a": "R3",  "adapter_a": 0, "port_a": 1, "node_b": "PC3",      "adapter_b": 0, "port_b": 0},
+          {"node_a": "R4",  "adapter_a": 0, "port_a": 1, "node_b": "SRV-WEB",  "adapter_b": 0, "port_b": 0},
+          {"node_a": "R4",  "adapter_a": 0, "port_a": 2, "node_b": "SRV-REDIS","adapter_b": 0, "port_b": 0},
+          {"node_a": "R4",  "adapter_a": 0, "port_a": 3, "node_b": "SRV-DB",   "adapter_b": 0, "port_b": 0},
       ]
 
       # Збираємо вже існуючі пари (node_id, adapter, port) з обох кінців
@@ -77,7 +91,7 @@
           }
           project["topology"]["links"].append(link)
           existing.add(ep_a)
-          added.append(f"{na}<->{nb}")
+          added.append(f"{na}(e{d['adapter_a']}/{d['port_a']})<->{nb}(e{d['adapter_b']}/{d['port_b']})")
 
       with open(project_file, 'w') as f:
           json.dump(project, f, indent=2)
