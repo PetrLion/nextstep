@@ -14,20 +14,31 @@
 
       existing_names = {n["name"] for n in project["topology"]["nodes"]}
 
-      routers = [
-          {"name": "R1", "x": 0,   "y": 0,   "console": 5001},
-          {"name": "R2", "x": 200, "y": 0,   "console": 5002},
-          {"name": "R3", "x": 0,   "y": 200, "console": 5003},
-          {"name": "R4", "x": 200, "y": 200, "console": 5004},
+      # All 9 devices: routers, PCs, and servers
+      devices = [
+          # Routers (Core/Access/Perimeter/DMZ)
+          {"name": "R1", "x": 0,    "y": 0,    "console": 5001, "adapters": 4, "symbol": ":/symbols/router.svg"},
+          {"name": "R2", "x": 200,  "y": 0,    "console": 5002, "adapters": 4, "symbol": ":/symbols/router.svg"},
+          {"name": "R3", "x": 0,    "y": 200,  "console": 5003, "adapters": 4, "symbol": ":/symbols/router.svg"},
+          {"name": "R4", "x": 200,  "y": 200,  "console": 5004, "adapters": 4, "symbol": ":/symbols/router.svg"},
+          # User PCs (Access Zone via R2)
+          {"name": "PC1",          "x": 300,  "y": -100, "console": 5005, "adapters": 1, "symbol": ":/symbols/computer.svg"},
+          {"name": "PC2",          "x": 300,  "y": 100,  "console": 5006, "adapters": 1, "symbol": ":/symbols/computer.svg"},
+          # Perimeter PC (WAF/IDS via R3)
+          {"name": "PC-PERIMETER", "x": -100, "y": 200,  "console": 5007, "adapters": 1, "symbol": ":/symbols/computer.svg"},
+          # DMZ Servers (via R4)
+          {"name": "SRV-WEB",   "x": 300, "y": 250, "console": 5008, "adapters": 1, "symbol": ":/symbols/server.svg"},
+          {"name": "SRV-REDIS", "x": 400, "y": 300, "console": 5009, "adapters": 2, "symbol": ":/symbols/server.svg"},
+          {"name": "SRV-DB",    "x": 400, "y": 200, "console": 5010, "adapters": 2, "symbol": ":/symbols/server.svg"},
       ]
 
       added = []
-      for idx, r in enumerate(routers, start=1):
-          if r["name"] in existing_names:
+      for d in devices:
+          if d["name"] in existing_names:
               continue
           node = {
               "compute_id": "local",
-              "console": r["console"],
+              "console": d["console"],
               "console_type": "telnet",
               "custom_adapters": [],
               "first_port_name": None,
@@ -35,26 +46,26 @@
               "label": {
                   "rotation": 0,
                   "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-                  "text": r["name"],
+                  "text": d["name"],
                   "x": -25,
                   "y": -25
               },
               "locked": False,
-              "name": r["name"],
+              "name": d["name"],
               "node_id": str(uuid.uuid4()),
               "node_type": "qemu",
               "properties": {
-                  "adapters": 4,
+                  "adapters": d["adapters"],
                   "memory": 256,
-                  "name": r["name"]
+                  "name": d["name"]
               },
-              "x": r["x"],
-              "y": r["y"],
+              "x": d["x"],
+              "y": d["y"],
               "width": 72,
-              "symbol": ":/symbols/router.svg"
+              "symbol": d["symbol"]
           }
           project["topology"]["nodes"].append(node)
-          added.append(r["name"])
+          added.append(d["name"])
 
       with open(project_file, 'w') as f:
           json.dump(project, f, indent=2)
@@ -64,11 +75,11 @@
       else:
           print("All nodes already present")
 
-- name: "🖧 Додати вузли R1-R4 до GNS3 проекту через JSON"
+- name: "🖧 Додати всі 9 вузлів до GNS3 проекту через JSON"
   command: python3 /tmp/gns3_add_nodes.py
   register: add_nodes_result
 
-- name: "✅ Вузли R1-R4 додано до JSON"
+- name: "✅ Вузли додано до JSON"
   debug:
     msg: "{{ add_nodes_result.stdout }}"
 

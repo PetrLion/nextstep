@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GNS3 Topology</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+    header {
+      background: #16213e;
+      padding: 16px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #0f3460;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 1.4em; color: #e94560; }
+    nav a {
+      color: #a0a0c0;
+      text-decoration: none;
+      margin-left: 20px;
+      font-size: 0.95em;
+    }
+    nav a:hover, nav a.active { color: #e94560; }
+    .main { display: flex; flex: 1; overflow: hidden; }
+    #graph-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    #graph-svg {
+      width: 100%;
+      height: 100%;
+      min-height: 600px;
+    }
+    .sidebar {
+      width: 260px;
+      background: #16213e;
+      border-left: 1px solid #0f3460;
+      padding: 18px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .sidebar h3 {
+      font-size: 0.95em;
+      color: #c0c0e0;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #0f3460;
+      padding-bottom: 8px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 0.85em;
+    }
+    .legend-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .node-info {
+      background: #0f1a30;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 16px;
+      display: none;
+    }
+    .node-info.visible { display: block; }
+    .node-info h4 { color: #e94560; margin-bottom: 8px; }
+    .node-info dl dt { color: #808090; font-size: 0.8em; margin-top: 6px; }
+    .node-info dl dd { color: #e0e0e0; font-size: 0.9em; }
+    .zone-legend {
+      margin-top: 16px;
+    }
+    .zone-box {
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-bottom: 6px;
+      font-size: 0.82em;
+      font-weight: bold;
+    }
+    .controls {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ctrl-btn {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      color: #a0a0c0;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    .ctrl-btn:hover { color: #e94560; border-color: #e94560; }
+
+    /* D3 node styles */
+    .node circle {
+      stroke-width: 2;
+      cursor: pointer;
+      filter: drop-shadow(0 0 6px rgba(0,0,0,0.5));
+    }
+    .node circle:hover { stroke-width: 3; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
+    .node text {
+      font-size: 11px;
+      font-weight: bold;
+      fill: #e0e0e0;
+      pointer-events: none;
+    }
+    .link {
+      stroke: #3a5080;
+      stroke-width: 2;
+      stroke-opacity: 0.8;
+    }
+    .link-label {
+      font-size: 9px;
+      fill: #6080a0;
+    }
+    .zone-area {
+      rx: 16;
+      ry: 16;
+      opacity: 0.06;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🗺 Network Topology</h1>
+    <nav>
+      <a href="/">📋 Dashboard</a>
+      <a href="/topology" class="active">🗺 Topology</a>
+      <a href="/api/topology">📊 API</a>
+    </nav>
+  </header>
+
+  <div class="main">
+    <div id="graph-container">
+      <div class="controls">
+        <button class="ctrl-btn" onclick="zoomIn()" title="Збільшити">＋</button>
+        <button class="ctrl-btn" onclick="zoomOut()" title="Зменшити">－</button>
+        <button class="ctrl-btn" onclick="resetZoom()" title="Скинути">⌂</button>
+      </div>
+      <svg id="graph-svg"></svg>
+    </div>
+
+    <div class="sidebar">
+      <h3>🎨 Зони</h3>
+      <div class="zone-legend">
+        <div class="zone-box" style="background:#14532d22; border:1px solid #4ade80; color:#4ade80;">OSPF Area 0 (Core)</div>
+        <div class="zone-box" style="background:#1e3a5f22; border:1px solid #60a5fa; color:#60a5fa;">Access Zone</div>
+        <div class="zone-box" style="background:#3b076422; border:1px solid #a78bfa; color:#a78bfa;">Perimeter Zone</div>
+        <div class="zone-box" style="background:#7f1d1d22; border:1px solid #f87171; color:#f87171;">DMZ Zone</div>
+      </div>
+
+      <h3 style="margin-top:16px;">📌 Легенда</h3>
+      <div class="legend-item"><div class="legend-dot" style="background:#facc15;"></div>Маршрутизатор</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#34d399;"></div>Комп'ютер</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f87171;"></div>Сервер</div>
+
+      <div class="node-info" id="nodeInfo">
+        <h4 id="ni-name">—</h4>
+        <dl>
+          <dt>Тип</dt><dd id="ni-type">—</dd>
+          <dt>Зона</dt><dd id="ni-zone">—</dd>
+          <dt>Console</dt><dd id="ni-console">—</dd>
+          <dt>Координати</dt><dd id="ni-coords">—</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <!-- D3.js v7 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+  <script>
+    // Topology data from Jinja2
+    const nodesData = {{ nodes_json | safe }};
+    const linksData = {{ links_json | safe }};
+
+    // Node metadata
+    const nodeMeta = {
+      'R1':           { zone: 'Core',      color: '#facc15', type: 'Router',   console: 5001 },
+      'R2':           { zone: 'Access',    color: '#facc15', type: 'Router',   console: 5002 },
+      'R3':           { zone: 'Perimeter', color: '#facc15', type: 'Router',   console: 5003 },
+      'R4':           { zone: 'DMZ',       color: '#facc15', type: 'Router',   console: 5004 },
+      'PC1':          { zone: 'Access',    color: '#34d399', type: 'PC',       console: 5005 },
+      'PC2':          { zone: 'Access',    color: '#34d399', type: 'PC',       console: 5006 },
+      'PC-PERIMETER': { zone: 'Perimeter', color: '#a78bfa', type: 'PC',       console: 5007 },
+      'SRV-WEB':      { zone: 'DMZ',       color: '#f87171', type: 'Server',   console: 5008 },
+      'SRV-REDIS':    { zone: 'DMZ',       color: '#f87171', type: 'Server',   console: 5009 },
+      'SRV-DB':       { zone: 'DMZ',       color: '#f87171', type: 'Server',   console: 5010 },
+    };
+
+    // Zone background areas
+    const zones = [
+      { id: 'core',      label: 'OSPF Area 0 (Core)', color: '#4ade80', nodes: ['R1'] },
+      { id: 'access',    label: 'Access Zone',         color: '#60a5fa', nodes: ['R2','PC1','PC2'] },
+      { id: 'perimeter', label: 'Perimeter Zone',      color: '#a78bfa', nodes: ['R3','PC-PERIMETER'] },
+      { id: 'dmz',       label: 'DMZ Zone',            color: '#f87171', nodes: ['R4','SRV-WEB','SRV-REDIS','SRV-DB'] },
+    ];
+
+    const svg = d3.select('#graph-svg');
+    const container = d3.select('#graph-container');
+    let svgEl = document.getElementById('graph-svg');
+
+    function getSize() {
+      return { w: svgEl.clientWidth || 900, h: svgEl.clientHeight || 600 };
+    }
+
+    // Build node and link objects
+    // Use fixed positions scaled from GNS3 coords
+    const SCALE = 1.5;
+    const OFFSET_X = 300;
+    const OFFSET_Y = 250;
+
+    const nodes = nodesData.map(n => ({
+      id: n.name,
+      x: n.x * SCALE + OFFSET_X,
+      y: n.y * SCALE + OFFSET_Y,
+      console: n.console,
+      ...nodeMeta[n.name]
+    }));
+
+    const nodeIndex = {};
+    nodes.forEach(n => nodeIndex[n.id] = n);
+
+    const links = linksData.map(l => ({
+      source: l.node_a,
+      target: l.node_b,
+      iface_a: l.iface_a,
+      iface_b: l.iface_b,
+    }));
+
+    // Main render
+    let zoomObj = d3.zoom().scaleExtent([0.3, 3]).on('zoom', (e) => {
+      g.attr('transform', e.transform);
+    });
+    svg.call(zoomObj);
+
+    const g = svg.append('g');
+
+    // Zone backgrounds
+    zones.forEach(zone => {
+      const zNodes = zone.nodes.map(id => nodeIndex[id]).filter(Boolean);
+      if (!zNodes.length) return;
+      const xs = zNodes.map(n => n.x);
+      const ys = zNodes.map(n => n.y);
+      const x1 = Math.min(...xs) - 70, y1 = Math.min(...ys) - 60;
+      const x2 = Math.max(...xs) + 70, y2 = Math.max(...ys) + 60;
+      g.append('rect')
+        .attr('x', x1).attr('y', y1)
+        .attr('width', x2 - x1).attr('height', y2 - y1)
+        .attr('rx', 18).attr('ry', 18)
+        .attr('fill', zone.color).attr('opacity', 0.07)
+        .attr('stroke', zone.color).attr('stroke-width', 1.5).attr('stroke-opacity', 0.3);
+      g.append('text')
+        .attr('x', x1 + 10).attr('y', y1 + 20)
+        .attr('fill', zone.color).attr('opacity', 0.7)
+        .attr('font-size', '11px').attr('font-weight', 'bold')
+        .text(zone.label);
+    });
+
+    // Links
+    const linkG = g.append('g').selectAll('line')
+      .data(links).enter().append('line')
+      .attr('class', 'link')
+      .attr('x1', d => nodeIndex[d.source]?.x ?? 0)
+      .attr('y1', d => nodeIndex[d.source]?.y ?? 0)
+      .attr('x2', d => nodeIndex[d.target]?.x ?? 0)
+      .attr('y2', d => nodeIndex[d.target]?.y ?? 0);
+
+    // Link interface labels
+    links.forEach(l => {
+      const src = nodeIndex[l.source], tgt = nodeIndex[l.target];
+      if (!src || !tgt) return;
+      const mx = (src.x + tgt.x) / 2, my = (src.y + tgt.y) / 2;
+      if (l.iface_a) {
+        g.append('text').attr('class', 'link-label')
+          .attr('x', src.x + (mx - src.x) * 0.3)
+          .attr('y', src.y + (my - src.y) * 0.3 - 4)
+          .text(l.iface_a);
+      }
+      if (l.iface_b) {
+        g.append('text').attr('class', 'link-label')
+          .attr('x', tgt.x + (mx - tgt.x) * 0.3)
+          .attr('y', tgt.y + (my - tgt.y) * 0.3 - 4)
+          .text(l.iface_b);
+      }
+    });
+
+    // Nodes
+    const nodeG = g.append('g').selectAll('g.node')
+      .data(nodes).enter()
+      .append('g').attr('class', 'node')
+      .attr('transform', d => `translate(${d.x},${d.y})`)
+      .on('click', (e, d) => showNodeInfo(d))
+      .call(d3.drag()
+        .on('start', (e, d) => { d.fx = d.x; d.fy = d.y; })
+        .on('drag', (e, d) => {
+          d.x = e.x; d.y = e.y;
+          d3.select(e.sourceEvent.target.closest('g.node'))
+            .attr('transform', `translate(${d.x},${d.y})`);
+          updateLinks();
+        })
+        .on('end', (e, d) => { d.fx = null; d.fy = null; })
+      );
+
+    nodeG.append('circle')
+      .attr('r', d => d.type === 'Router' ? 22 : (d.type === 'Server' ? 20 : 18))
+      .attr('fill', d => d.color + '22')
+      .attr('stroke', d => d.color);
+
+    nodeG.append('text')
+      .attr('dy', '0.35em')
+      .attr('text-anchor', 'middle')
+      .attr('font-size', d => d.id.length > 7 ? '8px' : '10px')
+      .text(d => d.id);
+
+    function updateLinks() {
+      linkG.attr('x1', d => nodeIndex[d.source]?.x ?? 0)
+           .attr('y1', d => nodeIndex[d.source]?.y ?? 0)
+           .attr('x2', d => nodeIndex[d.target]?.x ?? 0)
+           .attr('y2', d => nodeIndex[d.target]?.y ?? 0);
+    }
+
+    function showNodeInfo(d) {
+      document.getElementById('ni-name').textContent = d.id;
+      document.getElementById('ni-type').textContent = d.type || '—';
+      document.getElementById('ni-zone').textContent = d.zone || '—';
+      document.getElementById('ni-console').textContent = d.console ? `:${d.console}` : '—';
+      document.getElementById('ni-coords').textContent = `x=${Math.round(d.x)}, y=${Math.round(d.y)}`;
+      document.getElementById('nodeInfo').classList.add('visible');
+    }
+
+    // Zoom controls
+    function zoomIn()    { svg.transition().call(zoomObj.scaleBy, 1.4); }
+    function zoomOut()   { svg.transition().call(zoomObj.scaleBy, 0.7); }
+    function resetZoom() { svg.transition().call(zoomObj.transform, d3.zoomIdentity.translate(50, 30).scale(1)); }
+
+    // Initial center
+    resetZoom();
+  </script>
+</body>
+</html>
