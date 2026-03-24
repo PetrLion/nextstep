@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GNS3 Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; }
+    header {
+      background: #16213e;
+      padding: 16px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #0f3460;
+    }
+    header h1 { font-size: 1.4em; color: #e94560; }
+    nav a {
+      color: #a0a0c0;
+      text-decoration: none;
+      margin-left: 20px;
+      font-size: 0.95em;
+    }
+    nav a:hover, nav a.active { color: #e94560; }
+    .container { padding: 24px 30px; }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #16213e;
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+      border: 1px solid #0f3460;
+    }
+    .stat-card .num { font-size: 2em; font-weight: bold; color: #e94560; }
+    .stat-card .label { font-size: 0.85em; color: #a0a0c0; margin-top: 4px; }
+    .card {
+      background: #16213e;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #0f3460;
+    }
+    .card h2 { font-size: 1.1em; margin-bottom: 14px; color: #c0c0e0; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9em; }
+    th {
+      background: #0f3460;
+      color: #c0c0ff;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+    td { padding: 9px 12px; border-bottom: 1px solid #0f3460; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.04); }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+    .badge-up    { background: #1a6e3c; color: #4ade80; border: 1px solid #4ade80; }
+    .badge-down  { background: #6e1a1a; color: #f87171; border: 1px solid #f87171; }
+    .badge-ok    { background: #1a3e6e; color: #60a5fa; border: 1px solid #60a5fa; }
+    .zone-router    { color: #facc15; }
+    .zone-access    { color: #34d399; }
+    .zone-perimeter { color: #a78bfa; }
+    .zone-dmz       { color: #f87171; }
+    .btn {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.78em;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      margin: 0 2px;
+      text-decoration: none;
+    }
+    .btn-start  { background: #166534; color: #4ade80; }
+    .btn-stop   { background: #7f1d1d; color: #f87171; }
+    .btn-delete { background: #44403c; color: #d4d4d8; }
+    .btn:hover  { opacity: 0.8; }
+    .project-info { display: flex; gap: 30px; flex-wrap: wrap; }
+    .project-info dt { color: #808090; font-size: 0.85em; }
+    .project-info dd { color: #e0e0e0; font-weight: bold; font-size: 0.95em; margin-bottom: 10px; }
+    .links-list { list-style: none; }
+    .links-list li {
+      padding: 6px 0;
+      border-bottom: 1px solid #0f3460;
+      font-size: 0.9em;
+      color: #a0b0c0;
+    }
+    .links-list li:last-child { border-bottom: none; }
+    .links-list .iface { color: #60a5fa; font-family: monospace; font-size: 0.85em; }
+    .empty-msg { color: #606080; font-style: italic; padding: 10px 0; }
+    .toolbar { margin-bottom: 16px; display: flex; gap: 10px; align-items: center; }
+    .toolbar input {
+      background: #0f3460;
+      border: 1px solid #1e4080;
+      color: #e0e0e0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.9em;
+      width: 220px;
+    }
+    .toolbar input:focus { outline: none; border-color: #e94560; }
+    .filter-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85em;
+      cursor: pointer;
+      border: 1px solid #1e4080;
+      background: #0f3460;
+      color: #a0a0c0;
+    }
+    .filter-btn.active { border-color: #e94560; color: #e94560; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🖧 GNS3 Topology Monitor</h1>
+    <nav>
+      <a href="/" class="active">📋 Dashboard</a>
+      <a href="/topology">🗺 Topology</a>
+      <a href="/api/topology">📊 API</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <!-- Stats row -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="num">{{ nodes | length }}</div>
+        <div class="label">Всього пристроїв</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">{{ links | length }}</div>
+        <div class="label">З'єднань</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">{{ routers | length }}</div>
+        <div class="label">Маршрутизаторів</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">{{ pcs | length }}</div>
+        <div class="label">Комп'ютерів</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">{{ servers | length }}</div>
+        <div class="label">Серверів</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" style="color: {% if file_ok %}#4ade80{% else %}#f87171{% endif %}">
+          {% if file_ok %}●{% else %}○{% endif %}
+        </div>
+        <div class="label">Файл проекту</div>
+      </div>
+    </div>
+
+    <!-- Project Info -->
+    <div class="card">
+      <h2>📁 Проект</h2>
+      <dl class="project-info">
+        <div>
+          <dt>Назва</dt>
+          <dd>{{ project_name }}</dd>
+        </div>
+        <div>
+          <dt>Версія</dt>
+          <dd>{{ version }}</dd>
+        </div>
+        <div>
+          <dt>Файл</dt>
+          <dd style="font-family: monospace; font-size: 0.85em;">{{ project_file }}</dd>
+        </div>
+        <div>
+          <dt>Статус</dt>
+          <dd>
+            <span class="badge {% if file_ok %}badge-up{% else %}badge-down{% endif %}">
+              {% if file_ok %}✅ знайдено{% else %}❌ не знайдено{% endif %}
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt>Час перевірки</dt>
+          <dd>{{ ts }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Devices Table -->
+    <div class="card">
+      <h2>🖧 Пристрої ({{ nodes | length }})</h2>
+      <div class="toolbar">
+        <input type="text" id="filterInput" placeholder="🔍 Фільтр за назвою..." onkeyup="filterTable()">
+        <button class="filter-btn active" onclick="filterZone('all', this)">Всі</button>
+        <button class="filter-btn" onclick="filterZone('router', this)">Роутери</button>
+        <button class="filter-btn" onclick="filterZone('access', this)">Access</button>
+        <button class="filter-btn" onclick="filterZone('perimeter', this)">Perimeter</button>
+        <button class="filter-btn" onclick="filterZone('dmz', this)">DMZ</button>
+      </div>
+      {% if nodes %}
+      <table id="devicesTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ім'я</th>
+            <th>Зона</th>
+            <th>Тип</th>
+            <th>Статус</th>
+            <th>IP адреса</th>
+            <th>Console</th>
+            <th>Дії</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set zone_map = {
+            'R1': ('router', 'Core'),
+            'R2': ('router', 'Access'),
+            'R3': ('router', 'Perimeter'),
+            'R4': ('router', 'DMZ'),
+            'PC1': ('access', 'Access'),
+            'PC2': ('access', 'Access'),
+            'PC-PERIMETER': ('perimeter', 'Perimeter'),
+            'SRV-WEB': ('dmz', 'DMZ'),
+            'SRV-REDIS': ('dmz', 'DMZ'),
+            'SRV-DB': ('dmz', 'DMZ')
+          } %}
+          {% set ip_map = {
+            'R1': '10.0.0.1',
+            'R2': '10.0.1.1',
+            'R3': '10.0.2.1',
+            'R4': '10.0.3.1',
+            'PC1': '10.0.1.10',
+            'PC2': '10.0.1.11',
+            'PC-PERIMETER': '10.0.2.10',
+            'SRV-WEB': '10.0.3.10',
+            'SRV-REDIS': '10.0.3.11',
+            'SRV-DB': '10.0.3.12'
+          } %}
+          {% for n in nodes %}
+          {% set zinfo = zone_map.get(n.name, ('router', 'Core')) %}
+          <tr data-zone="{{ zinfo[0] }}">
+            <td>{{ loop.index }}</td>
+            <td><strong>{{ n.name }}</strong></td>
+            <td>
+              <span class="zone-{{ zinfo[0] }}">{{ zinfo[1] }}</span>
+            </td>
+            <td>{{ n.node_type }}</td>
+            <td>
+              <span class="badge badge-down" id="status-{{ n.name | replace('-', '_') }}">⚫ DOWN</span>
+            </td>
+            <td style="font-family: monospace; color: #60a5fa;">
+              {{ ip_map.get(n.name, '—') }}
+            </td>
+            <td>
+              {% if n.console %}
+              <a href="telnet://localhost:{{ n.console }}" style="color: #60a5fa; font-family: monospace;">
+                :{{ n.console }}
+              </a>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <button class="btn btn-start"  onclick="nodeAction('{{ n.name }}', 'start')">▶ Start</button>
+              <button class="btn btn-stop"   onclick="nodeAction('{{ n.name }}', 'stop')">■ Stop</button>
+              <button class="btn btn-delete" onclick="nodeAction('{{ n.name }}', 'delete')">🗑 Delete</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="empty-msg">Вузли відсутні. Запустіть: <code>ansible-playbook playbooks/topology.yml -i inventory/hosts.ini</code></p>
+      {% endif %}
+    </div>
+
+    <!-- Links Table -->
+    <div class="card">
+      <h2>🔗 З'єднання ({{ links | length }})</h2>
+      {% if links %}
+      <ul class="links-list">
+        {% for l in links %}
+        <li>
+          <strong>{{ l.node_a }}</strong>
+          <span class="iface">({{ l.iface_a }})</span>
+          ↔
+          <strong>{{ l.node_b }}</strong>
+          <span class="iface">({{ l.iface_b }})</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="empty-msg">З'єднання відсутні.</p>
+      {% endif %}
+    </div>
+
+    <!-- Quick Start -->
+    <div class="card">
+      <h2>🚀 Швидкий старт</h2>
+      <pre style="background:#0f1a30; padding:12px; border-radius:6px; font-size:0.85em; color:#a0c0e0; overflow-x:auto;">
+cd ansible
+ansible-playbook playbooks/topology.yml -i inventory/hosts.ini -v
+cp /tmp/gns3_project/Network_Topology.gns3 ~/GNS3/projects/&lt;project-id&gt;/</pre>
+    </div>
+  </div>
+
+  <script>
+    function filterTable() {
+      const input = document.getElementById('filterInput').value.toLowerCase();
+      document.querySelectorAll('#devicesTable tbody tr').forEach(row => {
+        const name = row.cells[1].textContent.toLowerCase();
+        row.style.display = name.includes(input) ? '' : 'none';
+      });
+    }
+
+    let currentZone = 'all';
+    function filterZone(zone, btn) {
+      currentZone = zone;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('#devicesTable tbody tr').forEach(row => {
+        if (zone === 'all' || row.dataset.zone === zone) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    function nodeAction(name, action) {
+      if (action === 'delete' && !confirm(`Видалити вузол ${name}?`)) return;
+      fetch(`/api/node/${name}/${action}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          alert(data.message || data.error || 'Виконано');
+          if (action === 'start') {
+            const el = document.getElementById('status-' + name.replace(/-/g, '_'));
+            if (el) {
+              el.className = 'badge badge-up';
+              el.textContent = '🟢 UP';
+            }
+          } else if (action === 'stop') {
+            const el = document.getElementById('status-' + name.replace(/-/g, '_'));
+            if (el) {
+              el.className = 'badge badge-down';
+              el.textContent = '⚫ DOWN';
+            }
+          }
+        })
+        .catch(() => alert('Помилка запиту. GNS3 сервер недоступний.'));
+    }
+  </script>
+</body>
+</html>

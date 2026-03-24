@@ -4,7 +4,7 @@
 import json
 import os
 from datetime import datetime
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
 
@@ -13,99 +13,32 @@ GNS3_PROJECT_FILE = os.environ.get(
     "/tmp/gns3_project/Network_Topology.gns3",
 )
 
-HTML = """<!DOCTYPE html>
-<html lang="uk">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GNS3 Topology Monitor</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 30px; background: #f5f5f5; }
-    h1   { color: #2e3436; }
-    .card {
-      background: #fff; border-radius: 8px; padding: 20px;
-      margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,.1);
-    }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
-    th { background: #2e3436; color: #fff; }
-    tr:nth-child(even) { background: #f9f9f9; }
-    .badge {
-      display: inline-block; padding: 2px 10px; border-radius: 12px;
-      font-size: 0.85em; font-weight: bold;
-    }
-    .ok   { background: #8ae234; color: #1a1a1a; }
-    .warn { background: #fce94f; color: #1a1a1a; }
-    .err  { background: #ef2929; color: #fff; }
-    a { color: #3465a4; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-  </style>
-</head>
-<body>
-  <h1>🖧 GNS3 Topology Monitor</h1>
+# Zone and IP metadata for the 9-device topology
+_ZONE_MAP = {
+    "R1":           ("router",    "Core"),
+    "R2":           ("router",    "Access"),
+    "R3":           ("router",    "Perimeter"),
+    "R4":           ("router",    "DMZ"),
+    "PC1":          ("access",    "Access"),
+    "PC2":          ("access",    "Access"),
+    "PC-PERIMETER": ("perimeter", "Perimeter"),
+    "SRV-WEB":      ("dmz",       "DMZ"),
+    "SRV-REDIS":    ("dmz",       "DMZ"),
+    "SRV-DB":       ("dmz",       "DMZ"),
+}
 
-  <div class="card">
-    <h2>📋 Проект</h2>
-    <table>
-      <tr><th>Параметр</th><th>Значення</th></tr>
-      <tr><td>Назва</td><td>{{ project_name }}</td></tr>
-      <tr><td>Файл</td><td>{{ project_file }}</td></tr>
-      <tr><td>Статус файлу</td>
-          <td><span class="badge {{ 'ok' if file_ok else 'err' }}">
-              {{ '✅ знайдено' if file_ok else '❌ не знайдено' }}</span></td></tr>
-      <tr><td>Версія</td><td>{{ version }}</td></tr>
-      <tr><td>Час перевірки</td><td>{{ ts }}</td></tr>
-    </table>
-  </div>
-
-  <div class="card">
-    <h2>🖧 Вузли ({{ nodes | length }})</h2>
-    {% if nodes %}
-    <table>
-      <tr><th>#</th><th>Ім'я</th><th>Тип</th><th>Console</th><th>X</th><th>Y</th></tr>
-      {% for n in nodes %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ n.name }}</td>
-        <td>{{ n.node_type }}</td>
-        <td>{{ n.console }}</td>
-        <td>{{ n.x }}</td>
-        <td>{{ n.y }}</td>
-      </tr>
-      {% endfor %}
-    </table>
-    {% else %}
-    <p>Вузли відсутні. Запустіть: <code>./start_all.sh --ansible</code></p>
-    {% endif %}
-  </div>
-
-  <div class="card">
-    <h2>🔗 З'єднання ({{ links | length }})</h2>
-    {% if links %}
-    <table>
-      <tr><th>#</th><th>Вузол A</th><th>Вузол B</th></tr>
-      {% for l in links %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ l.node_a }}</td>
-        <td>{{ l.node_b }}</td>
-      </tr>
-      {% endfor %}
-    </table>
-    {% else %}
-    <p>З'єднання відсутні.</p>
-    {% endif %}
-  </div>
-
-  <div class="card">
-    <h3>🚀 Швидкий старт</h3>
-    <pre>./start_all.sh --ansible   # повний запуск з Ansible автоматизацією
-./start_all.sh             # тільки GNS3 + веб-інтерфейс</pre>
-    <p><a href="/api/topology">📊 JSON API</a></p>
-  </div>
-</body>
-</html>
-"""
+_IP_MAP = {
+    "R1":           "10.0.0.1",
+    "R2":           "10.0.1.1",
+    "R3":           "10.0.2.1",
+    "R4":           "10.0.3.1",
+    "PC1":          "10.0.1.10",
+    "PC2":          "10.0.1.11",
+    "PC-PERIMETER": "10.0.2.10",
+    "SRV-WEB":      "10.0.3.10",
+    "SRV-REDIS":    "10.0.3.11",
+    "SRV-DB":       "10.0.3.12",
+}
 
 
 def _load_project():
@@ -121,39 +54,91 @@ def _node_id_to_name(project):
     return {n["node_id"]: n["name"] for n in project.get("topology", {}).get("nodes", [])}
 
 
+def _parse_topology(project):
+    """Return (nodes, links, routers, pcs, servers) from a loaded project."""
+    nodes = project.get("topology", {}).get("nodes", [])
+    id_map = _node_id_to_name(project)
+    raw_links = project.get("topology", {}).get("links", [])
+    links = []
+    for lnk in raw_links:
+        endpoints = lnk.get("nodes", [])
+        if len(endpoints) >= 2:
+            ep_a = endpoints[0]
+            ep_b = endpoints[1]
+            iface_a = ep_a.get("label", {}).get("text", "")
+            iface_b = ep_b.get("label", {}).get("text", "")
+            links.append({
+                "node_a": id_map.get(ep_a.get("node_id"), "?"),
+                "node_b": id_map.get(ep_b.get("node_id"), "?"),
+                "iface_a": iface_a,
+                "iface_b": iface_b,
+            })
+
+    routers = [n for n in nodes if n["name"] in ("R1", "R2", "R3", "R4")]
+    pcs     = [n for n in nodes if n["name"] in ("PC1", "PC2", "PC-PERIMETER")]
+    servers = [n for n in nodes if n["name"] in ("SRV-WEB", "SRV-REDIS", "SRV-DB")]
+    return nodes, links, routers, pcs, servers
+
+
 @app.route("/")
 def index():
     project = _load_project()
     file_ok = project is not None
 
     if project:
-        nodes = project.get("topology", {}).get("nodes", [])
-        id_map = _node_id_to_name(project)
-        raw_links = project.get("topology", {}).get("links", [])
-        links = []
-        for lnk in raw_links:
-            endpoints = lnk.get("nodes", [])
-            if len(endpoints) >= 2:
-                links.append({
-                    "node_a": id_map.get(endpoints[0].get("node_id"), "?"),
-                    "node_b": id_map.get(endpoints[1].get("node_id"), "?"),
-                })
+        nodes, links, routers, pcs, servers = _parse_topology(project)
         version = project.get("version", "?")
         project_name = project.get("name", "?")
     else:
-        nodes = []
-        links = []
+        nodes, links, routers, pcs, servers = [], [], [], [], []
         version = "—"
         project_name = "—"
 
-    return render_template_string(
-        HTML,
+    return render_template(
+        "dashboard.html",
         project_name=project_name,
         project_file=GNS3_PROJECT_FILE,
         file_ok=file_ok,
         version=version,
         nodes=nodes,
         links=links,
+        routers=routers,
+        pcs=pcs,
+        servers=servers,
+        ts=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )
+
+
+@app.route("/topology")
+def topology():
+    project = _load_project()
+    file_ok = project is not None
+
+    if project:
+        nodes, links, routers, pcs, servers = _parse_topology(project)
+        version = project.get("version", "?")
+        project_name = project.get("name", "?")
+    else:
+        nodes, links, routers, pcs, servers = [], [], [], [], []
+        version = "—"
+        project_name = "—"
+
+    nodes_json = json.dumps([
+        {"name": n["name"], "x": n.get("x", 0), "y": n.get("y", 0), "console": n.get("console")}
+        for n in nodes
+    ])
+    links_json = json.dumps(links)
+
+    return render_template(
+        "topology.html",
+        project_name=project_name,
+        project_file=GNS3_PROJECT_FILE,
+        file_ok=file_ok,
+        version=version,
+        nodes=nodes,
+        links=links,
+        nodes_json=nodes_json,
+        links_json=links_json,
         ts=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
@@ -164,26 +149,27 @@ def api_topology():
     if not project:
         return jsonify({"error": "Project file not found", "path": GNS3_PROJECT_FILE}), 404
 
-    id_map = _node_id_to_name(project)
-    raw_links = project.get("topology", {}).get("links", [])
-    links_out = []
-    for lnk in raw_links:
-        endpoints = lnk.get("nodes", [])
-        if len(endpoints) >= 2:
-            links_out.append({
-                "link_id": lnk.get("link_id"),
-                "node_a": id_map.get(endpoints[0].get("node_id"), "?"),
-                "node_b": id_map.get(endpoints[1].get("node_id"), "?"),
-            })
+    nodes, links, routers, pcs, servers = _parse_topology(project)
 
     return jsonify({
         "project_name": project.get("name"),
         "version": project.get("version"),
         "nodes": project.get("topology", {}).get("nodes", []),
-        "links": links_out,
+        "links": links,
         "scanned_at": datetime.now().isoformat(),
     })
 
 
+@app.route("/api/node/<name>/<action>", methods=["POST"])
+def node_action(name, action):
+    """Stub endpoint for node start/stop/delete actions."""
+    allowed_actions = ("start", "stop", "delete")
+    if action not in allowed_actions:
+        return jsonify({"error": f"Unknown action '{action}'"}), 400
+    # Without a live GNS3 server this is a stub that returns a friendly message
+    return jsonify({"message": f"Action '{action}' for node '{name}' queued. Connect GNS3 server to execute."})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5050, debug=False)
+
