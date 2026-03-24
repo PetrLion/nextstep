@@ -1,0 +1,27 @@
+---
+# Основний playbook для розгортання GNS3 топології через JSON маніпуляції
+# Не потребує REST API автентифікації для кроків 1-3
+
+- name: "🔧 GNS3 | Крок 1: Створення порожнього проекту JSON"
+  hosts: gns3_servers
+  gather_facts: false
+  roles:
+    - role: gns3_project_create
+
+- name: "🖧  GNS3 | Крок 2: Додавання вузлів R1-R4 через JSON"
+  hosts: gns3_servers
+  gather_facts: false
+  roles:
+    - role: gns3_add_nodes
+
+- name: "🔗 GNS3 | Крок 3: Додавання з'єднань через JSON"
+  hosts: gns3_servers
+  gather_facts: false
+  roles:
+    - role: gns3_add_links
+
+- name: "▶️  GNS3 | Крок 4: Запуск вузлів (потребує запущеного GNS3)"
+  hosts: gns3_servers
+  gather_facts: false
+  roles:
+    - role: gns3_start

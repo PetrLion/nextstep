@@ -1,0 +1,47 @@
+---
+- name: "🔍 Перевірити доступність GNS3 сервера"
+  uri:
+    url: "http://{{ gns3_host }}:{{ gns3_port }}/{{ gns3_api_version }}/version"
+    method: GET
+    validate_certs: false
+    status_code: [200, 401]
+    timeout: 5
+  register: gns3_version_check
+  ignore_errors: true
+
+- name: "⚠️  GNS3 сервер недоступний — пропускаємо запуск"
+  debug:
+    msg: "GNS3 сервер не запущений або недоступний. Запустіть GNS3 і спробуйте знову."
+  when: gns3_version_check is failed or gns3_version_check.status not in [200, 401]
+
+- name: "▶️  Запустити всі вузли проекту через REST API"
+  uri:
+    url: "http://{{ gns3_host }}:{{ gns3_port }}/{{ gns3_api_version }}/projects/{{ gns3_project_id }}/nodes/start"
+    method: POST
+    body_format: json
+    body: {}
+    validate_certs: false
+    status_code: [200, 201, 204, 401, 404]
+    timeout: 30
+  register: start_result
+  ignore_errors: true
+  when:
+    - gns3_version_check is not failed
+    - gns3_version_check.status in [200, 401]
+
+- name: "✅ Результат запуску вузлів"
+  debug:
+    msg: >-
+      {% if start_result is skipped %}
+        GNS3 сервер недоступний — вузли не запущені.
+      {% elif start_result.status in [200, 201, 204] %}
+        Вузли успішно запущені.
+      {% elif start_result.status == 401 %}
+        GNS3 вимагає автентифікацію. Вузли можна запустити вручну через GNS3 GUI.
+      {% elif start_result.status == 404 %}
+        Проект не знайдено на GNS3 сервері. Імпортуйте файл проекту вручну.
+      {% else %}
+        Статус: {{ start_result.status | default('невідомо') }}
+      {% endif %}
+  when: start_result is defined
+

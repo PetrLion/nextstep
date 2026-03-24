@@ -1,0 +1,96 @@
+---
+- name: "🔗 Підготувати скрипт для додавання з'єднань"
+  copy:
+    dest: "/tmp/gns3_add_links.py"
+    mode: "0755"
+    content: |
+      #!/usr/bin/env python3
+      import json, uuid, sys
+
+      project_file = "{{ gns3_project_file }}"
+
+      with open(project_file, 'r') as f:
+          project = json.load(f)
+
+      # Будуємо словник: ім'я вузла -> node_id
+      node_map = {n["name"]: n["node_id"] for n in project["topology"]["nodes"]}
+
+      # Список бажаних зв'язків
+      desired_links = [
+          {"node_a": "R1", "adapter_a": 0, "port_a": 0, "node_b": "R2", "adapter_b": 0, "port_b": 0},
+          {"node_a": "R1", "adapter_a": 1, "port_a": 0, "node_b": "R3", "adapter_b": 0, "port_b": 0},
+          {"node_a": "R1", "adapter_a": 2, "port_a": 0, "node_b": "R4", "adapter_b": 0, "port_b": 0},
+          {"node_a": "R2", "adapter_a": 1, "port_a": 0, "node_b": "R3", "adapter_b": 1, "port_b": 0},
+      ]
+
+      # Збираємо вже існуючі пари (node_id, adapter, port) з обох кінців
+      existing = set()
+      for lnk in project["topology"]["links"]:
+          for node_ep in lnk.get("nodes", []):
+              existing.add((
+                  node_ep.get("node_id"),
+                  node_ep.get("adapter_number"),
+                  node_ep.get("port_number"),
+              ))
+
+      added = []
+      for d in desired_links:
+          na = d["node_a"]
+          nb = d["node_b"]
+          if na not in node_map or nb not in node_map:
+              print(f"SKIP: node {na} or {nb} not found in project")
+              continue
+          ep_a = (node_map[na], d["adapter_a"], d["port_a"])
+          if ep_a in existing:
+              continue
+          link = {
+              "filters": {},
+              "link_id": str(uuid.uuid4()),
+              "link_style": {},
+              "nodes": [
+                  {
+                      "adapter_number": d["adapter_a"],
+                      "label": {
+                          "rotation": 0,
+                          "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
+                          "text": f"e{d['adapter_a']}/{d['port_a']}",
+                          "x": 0,
+                          "y": 0
+                      },
+                      "node_id": node_map[na],
+                      "port_number": d["port_a"]
+                  },
+                  {
+                      "adapter_number": d["adapter_b"],
+                      "label": {
+                          "rotation": 0,
+                          "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
+                          "text": f"e{d['adapter_b']}/{d['port_b']}",
+                          "x": 0,
+                          "y": 0
+                      },
+                      "node_id": node_map[nb],
+                      "port_number": d["port_b"]
+                  }
+              ],
+              "suspend": False
+          }
+          project["topology"]["links"].append(link)
+          existing.add(ep_a)
+          added.append(f"{na}<->{nb}")
+
+      with open(project_file, 'w') as f:
+          json.dump(project, f, indent=2)
+
+      if added:
+          print("Added links: " + ", ".join(added))
+      else:
+          print("All links already present")
+
+- name: "🔗 Додати з'єднання між вузлами через JSON"
+  command: python3 /tmp/gns3_add_links.py
+  register: add_links_result
+
+- name: "✅ З'єднання між вузлами додано до JSON"
+  debug:
+    msg: "{{ add_links_result.stdout }}"

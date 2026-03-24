@@ -1,0 +1,35 @@
+---
+# Змінні для ролі gns3_add_links
+gns3_project_dir: "/tmp/gns3_project"
+gns3_project_name: "Network_Topology"
+gns3_project_file: "{{ gns3_project_dir }}/{{ gns3_project_name }}.gns3"
+
+gns3_links:
+  - node_a: "R1"
+    adapter_a: 0
+    port_a: 0
+    node_b: "R2"
+    adapter_b: 0
+    port_b: 0
+    description: "R1-R2 core link 10.0.10.0/30"
+  - node_a: "R1"
+    adapter_a: 1
+    port_a: 0
+    node_b: "R3"
+    adapter_b: 0
+    port_b: 0
+    description: "R1-R3 core link 10.0.11.0/30"
+  - node_a: "R1"
+    adapter_a: 2
+    port_a: 0
+    node_b: "R4"
+    adapter_b: 0
+    port_b: 0
+    description: "R1-R4 core link 10.0.12.0/30"
+  - node_a: "R2"
+    adapter_a: 1
+    port_a: 0
+    node_b: "R3"
+    adapter_b: 1
+    port_b: 0
+    description: "R2-R3 backup link"

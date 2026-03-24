@@ -1,0 +1,4 @@
+---
+# Змінні для ролі gns3_start
+# gns3_host, gns3_port, gns3_api_version come from inventory.ini
+gns3_project_id: "00000000-0000-0000-0000-000000000001"

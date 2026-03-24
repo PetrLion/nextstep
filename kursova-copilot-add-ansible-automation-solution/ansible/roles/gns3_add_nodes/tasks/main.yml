@@ -1,0 +1,74 @@
+---
+- name: "🖧 Підготувати скрипт для додавання вузлів"
+  copy:
+    dest: "/tmp/gns3_add_nodes.py"
+    mode: "0755"
+    content: |
+      #!/usr/bin/env python3
+      import json, uuid, sys
+
+      project_file = "{{ gns3_project_file }}"
+
+      with open(project_file, 'r') as f:
+          project = json.load(f)
+
+      existing_names = {n["name"] for n in project["topology"]["nodes"]}
+
+      routers = [
+          {"name": "R1", "x": 0,   "y": 0,   "console": 5001},
+          {"name": "R2", "x": 200, "y": 0,   "console": 5002},
+          {"name": "R3", "x": 0,   "y": 200, "console": 5003},
+          {"name": "R4", "x": 200, "y": 200, "console": 5004},
+      ]
+
+      added = []
+      for idx, r in enumerate(routers, start=1):
+          if r["name"] in existing_names:
+              continue
+          node = {
+              "compute_id": "local",
+              "console": r["console"],
+              "console_type": "telnet",
+              "custom_adapters": [],
+              "first_port_name": None,
+              "height": 59,
+              "label": {
+                  "rotation": 0,
+                  "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
+                  "text": r["name"],
+                  "x": -25,
+                  "y": -25
+              },
+              "locked": False,
+              "name": r["name"],
+              "node_id": str(uuid.uuid4()),
+              "node_type": "qemu",
+              "properties": {
+                  "adapters": 4,
+                  "memory": 256,
+                  "name": r["name"]
+              },
+              "x": r["x"],
+              "y": r["y"],
+              "width": 72,
+              "symbol": ":/symbols/router.svg"
+          }
+          project["topology"]["nodes"].append(node)
+          added.append(r["name"])
+
+      with open(project_file, 'w') as f:
+          json.dump(project, f, indent=2)
+
+      if added:
+          print("Added nodes: " + ", ".join(added))
+      else:
+          print("All nodes already present")
+
+- name: "🖧 Додати вузли R1-R4 до GNS3 проекту через JSON"
+  command: python3 /tmp/gns3_add_nodes.py
+  register: add_nodes_result
+
+- name: "✅ Вузли R1-R4 додано до JSON"
+  debug:
+    msg: "{{ add_nodes_result.stdout }}"
+
