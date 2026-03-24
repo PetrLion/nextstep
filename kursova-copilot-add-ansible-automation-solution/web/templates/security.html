@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Tests &amp; Auto-Fix</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #0d1117; color: #c9d1d9;
+    }
+    header {
+      background: #161b22; border-bottom: 1px solid #30363d;
+      padding: 14px 28px; display: flex; align-items: center; gap: 16px;
+    }
+    header h1 { margin: 0; font-size: 1.2rem; color: #f0f6fc; }
+    header a  { color: #58a6ff; text-decoration: none; font-size: .9rem; }
+    header a:hover { text-decoration: underline; }
+
+    main { padding: 24px 28px; max-width: 1200px; margin: auto; }
+
+    h2 { color: #f0f6fc; font-size: 1rem; margin: 24px 0 12px; }
+    h2 span { margin-right: 8px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    /* ── cards ── */
+    .card {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 8px; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .card-title { font-weight: 600; color: #f0f6fc; font-size: .95rem; }
+    .card-desc  { font-size: .8rem; color: #8b949e; flex: 1; }
+
+    .card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .status-badge {
+      font-size: .75rem; padding: 2px 10px; border-radius: 20px;
+      font-weight: 600; background: #21262d; color: #8b949e;
+    }
+    .status-badge.ok       { background: #1a4024; color: #3fb950; }
+    .status-badge.warn     { background: #3d2f00; color: #d29922; }
+    .status-badge.critical { background: #3d1a1a; color: #f85149; }
+    .status-badge.running  { background: #1b2e4d; color: #58a6ff; }
+    .status-badge.applied  { background: #1a4024; color: #3fb950; }
+    .status-badge.partial  { background: #3d2f00; color: #d29922; }
+
+    button {
+      padding: 6px 16px; border-radius: 6px; border: none;
+      font-size: .85rem; font-weight: 600; cursor: pointer;
+      transition: opacity .15s;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-run { background: #238636; color: #fff; }
+    .btn-run:hover:not(:disabled) { background: #2ea043; }
+    .btn-fix { background: #1f6feb; color: #fff; }
+    .btn-fix:hover:not(:disabled) { background: #388bfd; }
+
+    /* ── log table ── */
+    .log-section { margin-top: 32px; }
+    .log-toolbar {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+    }
+    .log-toolbar h2 { margin: 0; }
+    .btn-export {
+      margin-left: auto; background: #21262d; color: #c9d1d9;
+      border: 1px solid #30363d;
+    }
+    .btn-export:hover { background: #30363d; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    thead th {
+      background: #21262d; color: #8b949e;
+      padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid #30363d;
+    }
+    tbody tr { border-bottom: 1px solid #21262d; }
+    tbody tr:hover { background: #161b22; }
+    tbody td { padding: 8px 12px; }
+    .empty-row td { color: #8b949e; text-align: center; padding: 20px; }
+
+    /* ── detail modal ── */
+    #modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.7); z-index: 100;
+      justify-content: center; align-items: center;
+    }
+    #modal-overlay.open { display: flex; }
+    #modal-box {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 10px; padding: 24px;
+      max-width: 640px; width: 95%; max-height: 80vh;
+      overflow-y: auto;
+    }
+    #modal-title { color: #f0f6fc; font-size: 1rem; font-weight: 700; margin: 0 0 12px; }
+    #modal-body  { font-size: .82rem; white-space: pre-wrap; color: #c9d1d9; }
+    #modal-close { float: right; background: #21262d; color: #c9d1d9; border: none; cursor: pointer; padding: 4px 12px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🛡️ Security Tests &amp; Auto-Fix</h1>
+  <a href="/">← Topology Monitor</a>
+</header>
+
+<main>
+
+  <!-- ── Security Tests ── -->
+  <h2><span>🔍</span>Security Tests</h2>
+  <div class="grid" id="tests-grid">
+
+    <div class="card" id="card-port_scan">
+      <div class="card-title">Port Scan</div>
+      <div class="card-desc">Scan open TCP ports via nmap (fallback: TCP connect).</div>
+      <div class="card-footer">
+        <span class="status-badge" id="badge-port_scan">—</span>
+        <button class="btn-run" onclick="runTest('port_scan')">RUN</button>
+      </div>
+    </div>
+
+    <div class="card" id="card-vulnerability">
+      <div class="card-title">Vulnerability Check</div>
+      <div class="card-desc">Check running services for known CVEs.</div>
+      <div class="card-footer">
+        <span class="status-badge" id="badge-vulnerability">—</span>
+        <button class="btn-run" onclick="runTest('vulnerability')">RUN</button>
+      </div>
+    </div>
+
+    <div class="card" id="card-ping">
+      <div class="card-title">Ping Check</div>
+      <div class="card-desc">Verify ICMP reachability of network hosts.</div>
+      <div class="card-footer">
+        <span class="status-badge" id="badge-ping">—</span>
+        <button class="btn-run" onclick="runTest('ping')">RUN</button>
+      </div>
+    </div>
+
+    <div class="card" id="card-acl">
+      <div class="card-title">ACL Validation</div>
+      <div class="card-desc">Audit routing / firewall rules in router configs.</div>
+      <div class="card-footer">
+        <span class="status-badge" id="badge-acl">—</span>
+        <button class="btn-run" onclick="runTest('acl')">RUN</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Auto-Fix ── -->
+  <h2><span>🛠️</span>Auto-Fix</h2>
+  <div class="grid" id="fixes-grid">
+
+    <div class="card" id="card-close_ports">
+      <div class="card-title">Close Open Ports</div>
+      <div class="card-desc">Block dangerous TCP ports via iptables (21, 23, 445 …).</div>
+      <div class="card-footer">
+        <span class="status-badge" id="badge-close_ports">—</span>
+        <button class="btn-fix" onclick="runFix('close_ports')">FIX</button>
+      </div>
+    </div>
+
+    <div class="card" id="card-enable_firewall">
+      <div class="card-title">Enable Firewall</div>
+      <div class="card-desc">Enable UFW or set default-DROP iptables policy.</div>
+      <div class="card-footer">
+        <span class="status-badge" id="badge-enable_firewall">—</span>
+        <button class="btn-fix" onclick="runFix('enable_firewall')">FIX</button>
+      </div>
+    </div>
+
+    <div class="card" id="card-update_patches">
+      <div class="card-title">Update Patches</div>
+      <div class="card-desc">Run <code>apt-get update &amp;&amp; apt-get upgrade</code>.</div>
+      <div class="card-footer">
+        <span class="status-badge" id="badge-update_patches">—</span>
+        <button class="btn-fix" onclick="runFix('update_patches')">FIX</button>
+      </div>
+    </div>
+
+    <div class="card" id="card-reset_acl">
+      <div class="card-title">Reset ACL Rules</div>
+      <div class="card-desc">Flush iptables and restore safe default policy.</div>
+      <div class="card-footer">
+        <span class="status-badge" id="badge-reset_acl">—</span>
+        <button class="btn-fix" onclick="runFix('reset_acl')">FIX</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Results Log ── -->
+  <div class="log-section">
+    <div class="log-toolbar">
+      <h2><span>📊</span>Results Log</h2>
+      <button class="btn-export" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn-export" onclick="exportJSON()">⬇ JSON</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Timestamp</th>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Severity</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody id="log-body">
+        <tr class="empty-row"><td colspan="7">No results yet – run a test or fix above.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- Detail modal -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <button id="modal-close" onclick="closeModal()">✕ Close</button>
+    <p id="modal-title"></p>
+    <pre id="modal-body"></pre>
+  </div>
+</div>
+
+<script>
+/* ── state ──────────────────────────────────────────────────────────────── */
+let results = [];
+
+/* ── helpers ────────────────────────────────────────────────────────────── */
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function severityClass(s) {
+  if (!s) return '';
+  const m = { low:'ok', ok:'ok', medium:'warn', warning:'warn', high:'warn', critical:'critical' };
+  return m[s.toLowerCase()] || '';
+}
+
+function now() {
+  return new Date().toLocaleString('uk-UA', { hour12: false });
+}
+
+/* ── badge update ───────────────────────────────────────────────────────── */
+function setBadge(id, text, cls) {
+  const el = document.getElementById('badge-' + id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'status-badge' + (cls ? ' ' + cls : '');
+}
+
+/* ── run test ───────────────────────────────────────────────────────────── */
+async function runTest(name) {
+  const btn = document.querySelector(`#card-${name} button`);
+  if (btn) btn.disabled = true;
+  setBadge(name, '⏳ Running…', 'running');
+
+  try {
+    const res = await fetch('/api/security/test/' + name, { method: 'POST' });
+    const data = await res.json();
+    const sev = data.severity || (data.error ? 'critical' : 'low');
+    const label = data.error ? '❌ Error' : severityLabel(sev);
+    setBadge(name, label, severityClass(sev));
+    addLog('test', name, res.ok ? 'ok' : 'error', sev, data);
+  } catch (e) {
+    setBadge(name, '❌ Error', 'critical');
+    addLog('test', name, 'error', 'critical', { error: e.message });
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+/* ── run fix ────────────────────────────────────────────────────────────── */
+async function runFix(name) {
+  const btn = document.querySelector(`#card-${name} button`);
+  if (btn) btn.disabled = true;
+  setBadge(name, '⏳ Applying…', 'running');
+
+  try {
+    const res = await fetch('/api/security/fix/' + name, { method: 'POST' });
+    const data = await res.json();
+    const status = data.status || (data.error ? 'error' : 'applied');
+    setBadge(name, status === 'applied' ? '✅ Applied' : status === 'partial' ? '⚠ Partial' : '❌ Error',
+             status === 'applied' ? 'applied' : status === 'partial' ? 'partial' : 'critical');
+    addLog('fix', name, status, '', data);
+  } catch (e) {
+    setBadge(name, '❌ Error', 'critical');
+    addLog('fix', name, 'error', '', { error: e.message });
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function severityLabel(s) {
+  const m = { low:'🟢 Low', ok:'🟢 OK', medium:'🟡 Medium', warning:'🟡 Warning', high:'🟠 High', critical:'🔴 Critical' };
+  return m[(s||'').toLowerCase()] || s;
+}
+
+/* ── log table ──────────────────────────────────────────────────────────── */
+function addLog(type, name, status, severity, data) {
+  results.push({ ts: now(), type, name, status, severity, data });
+  renderLog();
+}
+
+function renderLog() {
+  const tbody = document.getElementById('log-body');
+  if (!results.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No results yet – run a test or fix above.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = results.slice().reverse().map((r, i) => `
+    <tr>
+      <td>${results.length - i}</td>
+      <td>${esc(r.ts)}</td>
+      <td>${esc(r.type)}</td>
+      <td>${esc(r.name)}</td>
+      <td>${esc(r.status)}</td>
+      <td>${esc(r.severity || '—')}</td>
+      <td><button style="padding:3px 10px;font-size:.75rem;background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;cursor:pointer"
+                  onclick="showDetail(${results.length - 1 - i})">Details</button></td>
+    </tr>`).join('');
+}
+
+/* ── detail modal ───────────────────────────────────────────────────────── */
+function showDetail(idx) {
+  const r = results[idx];
+  document.getElementById('modal-title').textContent = `${r.type.toUpperCase()} › ${r.name}  (${r.ts})`;
+  document.getElementById('modal-body').textContent = JSON.stringify(r.data, null, 2);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+/* ── export ─────────────────────────────────────────────────────────────── */
+function exportCSV() {
+  const header = 'Timestamp,Type,Name,Status,Severity\n';
+  const rows = results.map(r =>
+    [r.ts, r.type, r.name, r.status, r.severity || ''].map(v => `"${v}"`).join(',')
+  ).join('\n');
+  download('security_results.csv', 'text/csv', header + rows);
+}
+
+function exportJSON() {
+  download('security_results.json', 'application/json', JSON.stringify(results, null, 2));
+}
+
+function download(filename, mime, content) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename;
+  a.click();
+}
+
+/* ── load existing results on page load ─────────────────────────────────── */
+(async function init() {
+  try {
+    const res = await fetch('/api/security/results');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.results)) {
+        results = data.results;
+        renderLog();
+      }
+    }
+  } catch (_) {}
+
+  try {
+    const res = await fetch('/api/security/status');
+    if (res.ok) {
+      const data = await res.json();
+      for (const [k, v] of Object.entries(data.status || {})) {
+        if (v.severity) setBadge(k, severityLabel(v.severity), severityClass(v.severity));
+        if (v.fix_status) {
+          const cls = v.fix_status === 'applied' ? 'applied' : v.fix_status === 'partial' ? 'partial' : '';
+          setBadge(k, v.fix_status === 'applied' ? '✅ Applied' : v.fix_status, cls);
+        }
+      }
+    }
+  } catch (_) {}
+})();
+</script>
+</body>
+</html>
