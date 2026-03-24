@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Scan – GNS3{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-search me-2 text-success"></i>Сканування мережі</h4>
+  <button class="btn btn-success" id="scanBtn" onclick="runScan()">
+    <i class="bi bi-play-fill me-1"></i>Запустити сканування
+  </button>
+</div>
+
+<!-- Stats row -->
+<div class="row g-3 mb-4 {% if not result %}d-none{% endif %}" id="scanStats">
+  <div class="col-6 col-md-3">
+    <div class="card text-center border-info">
+      <div class="card-body py-2">
+        <div class="fs-2 fw-bold text-info" id="s-total">{{ result.get('total', '—') if result else '—' }}</div>
+        <div class="small text-muted">Всього вузлів</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center border-success">
+      <div class="card-body py-2">
+        <div class="fs-2 fw-bold text-success" id="s-up">{{ result.get('hosts_up', []) | length if result else '—' }}</div>
+        <div class="small text-muted">Доступні</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center border-danger">
+      <div class="card-body py-2">
+        <div class="fs-2 fw-bold text-danger" id="s-down">{{ result.get('hosts_down', []) | length if result else '—' }}</div>
+        <div class="small text-muted">Недоступні</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center border-warning">
+      <div class="card-body py-2">
+        <div class="fs-2 fw-bold text-warning" id="s-errors">{{ result.get('errors', []) | length if result else '—' }}</div>
+        <div class="small text-muted">Помилок</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <!-- Results table -->
+    <div class="card">
+      <div class="card-header"><i class="bi bi-list-ul me-2"></i>Результати</div>
+      <div class="card-body p-0" id="scanResults">
+        {% if result %}
+          {% if result.get('hosts_up') %}
+          <div class="p-3 pb-0"><h6 class="text-success"><i class="bi bi-check-circle me-1"></i>Доступні хости</h6></div>
+          <ul class="list-group list-group-flush">
+            {% for h in result.get('hosts_up', []) %}
+            <li class="list-group-item list-group-item-dark d-flex justify-content-between">
+              <span><strong>{{ h.name }}</strong></span>
+              <span>
+                <span class="badge bg-success me-2">UP</span>
+                {% if h.get('ip') %}<code>{{ h.ip }}</code>{% endif %}
+              </span>
+            </li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% if result.get('hosts_down') %}
+          <div class="p-3 pb-0"><h6 class="text-danger"><i class="bi bi-x-circle me-1"></i>Недоступні хости</h6></div>
+          <ul class="list-group list-group-flush">
+            {% for h in result.get('hosts_down', []) %}
+            <li class="list-group-item list-group-item-dark d-flex justify-content-between">
+              <span><strong>{{ h.name }}</strong></span>
+              <span>
+                <span class="badge bg-danger me-2">DOWN</span>
+                <span class="text-muted small">{{ h.get('reason', '') }}</span>
+              </span>
+            </li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-search display-3 d-block mb-3"></i>
+          <p>Натисніть <strong>"Запустити сканування"</strong> для перевірки мережі.</p>
+        </div>
+        {% endif %}
+      </div>
+      {% if result and result.get('scanned_at') %}
+      <div class="card-footer small text-muted text-end">Скановано: {{ result.get('scanned_at') }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <!-- Pie chart -->
+    <div class="card">
+      <div class="card-header small"><i class="bi bi-pie-chart me-1"></i>Статистика</div>
+      <div class="card-body">
+        <canvas id="scanChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let scanChart = null;
+
+function buildChart(up, down, errors) {
+  const ctx = document.getElementById('scanChart').getContext('2d');
+  if (scanChart) scanChart.destroy();
+  scanChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Доступні', 'Недоступні', 'Помилки'],
+      datasets: [{
+        data: [up, down, errors],
+        backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
+        borderWidth: 0,
+      }],
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#ccc' } } },
+      cutout: '60%',
+    },
+  });
+}
+
+function runScan() {
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Сканую…';
+
+  fetch('/api/scan')
+    .then(r => r.json())
+    .then(data => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play-fill me-1"></i>Запустити сканування';
+      renderScan(data);
+    })
+    .catch(e => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play-fill me-1"></i>Запустити сканування';
+      showToast('danger', `Error: ${e}`);
+    });
+}
+
+function renderScan(data) {
+  document.getElementById('s-total').textContent = data.total || 0;
+  document.getElementById('s-up').textContent = (data.hosts_up || []).length;
+  document.getElementById('s-down').textContent = (data.hosts_down || []).length;
+  document.getElementById('s-errors').textContent = (data.errors || []).length;
+
+  buildChart(
+    (data.hosts_up || []).length,
+    (data.hosts_down || []).length,
+    (data.errors || []).length
+  );
+
+  let html = '';
+  if ((data.hosts_up || []).length) {
+    html += '<div class="p-3 pb-0"><h6 class="text-success"><i class="bi bi-check-circle me-1"></i>Доступні хости</h6></div>';
+    html += '<ul class="list-group list-group-flush">';
+    data.hosts_up.forEach(h => {
+      html += `<li class="list-group-item list-group-item-dark d-flex justify-content-between">
+        <strong>${h.name}</strong>
+        <span><span class="badge bg-success me-2">UP</span>${h.ip ? `<code>${h.ip}</code>` : ''}</span>
+      </li>`;
+    });
+    html += '</ul>';
+  }
+  if ((data.hosts_down || []).length) {
+    html += '<div class="p-3 pb-0"><h6 class="text-danger"><i class="bi bi-x-circle me-1"></i>Недоступні хости</h6></div>';
+    html += '<ul class="list-group list-group-flush">';
+    data.hosts_down.forEach(h => {
+      html += `<li class="list-group-item list-group-item-dark d-flex justify-content-between">
+        <strong>${h.name}</strong>
+        <span><span class="badge bg-danger me-2">DOWN</span><span class="text-muted small">${h.reason || ''}</span></span>
+      </li>`;
+    });
+    html += '</ul>';
+  }
+  if (!html) {
+    html = '<div class="text-center py-3 text-muted">Вузлів з IP адресами не знайдено</div>';
+  }
+  document.getElementById('scanResults').innerHTML = html;
+  showToast('success', 'Сканування завершено');
+}
+
+// Live update
+socket.on('scan_update', renderScan);
+
+// Init chart if data present
+{% if result %}
+buildChart(
+  {{ result.get('hosts_up', []) | length }},
+  {{ result.get('hosts_down', []) | length }},
+  {{ result.get('errors', []) | length }}
+);
+{% endif %}
+</script>
+{% endblock %}

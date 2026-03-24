@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Topology – GNS3{% endblock %}
+
+{% block head %}
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+<style>
+  #topology-canvas {
+    width: 100%; height: 560px;
+    background: #1a1a2e;
+    border: 1px solid #444;
+    border-radius: 8px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-diagram-3 me-2 text-info"></i>Мережева топологія</h4>
+  <div>
+    <span class="badge {% if gns3_online %}bg-success{% else %}bg-warning text-dark{% endif %} me-2">
+      {% if gns3_online %}🟢 Live API{% else %}🟡 File mode{% endif %}
+    </span>
+    <button class="btn btn-sm btn-outline-secondary" onclick="network && network.fit()">
+      <i class="bi bi-arrows-fullscreen me-1"></i>Fit
+    </button>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-9">
+    <div id="topology-canvas"></div>
+  </div>
+  <div class="col-12 col-lg-3">
+    <!-- Legend -->
+    <div class="card mb-3">
+      <div class="card-header small"><i class="bi bi-info-circle me-1"></i>Легенда</div>
+      <div class="card-body small">
+        <div class="d-flex align-items-center mb-1">
+          <span class="badge bg-success me-2">●</span> Запущено
+        </div>
+        <div class="d-flex align-items-center mb-1">
+          <span class="badge bg-danger me-2">●</span> Зупинено
+        </div>
+        <div class="d-flex align-items-center">
+          <span class="badge bg-warning text-dark me-2">●</span> Призупинено
+        </div>
+      </div>
+    </div>
+
+    <!-- Node details panel -->
+    <div class="card mb-3 d-none" id="nodeDetailsCard">
+      <div class="card-header small"><i class="bi bi-hdd me-1"></i>Деталі вузла</div>
+      <div class="card-body small" id="nodeDetails"></div>
+    </div>
+
+    <!-- Add node form -->
+    <div class="card mb-3">
+      <div class="card-header small"><i class="bi bi-plus-circle me-1 text-success"></i>Додати вузол</div>
+      <div class="card-body">
+        <div class="mb-2">
+          <input type="text" class="form-control form-control-sm" id="newNodeName" placeholder="Назва (напр. R5)">
+        </div>
+        <div class="mb-2">
+          <select class="form-select form-select-sm" id="newNodeType">
+            <option value="vpcs">VPCS</option>
+            <option value="dynamips">Dynamips</option>
+            <option value="docker">Docker</option>
+            <option value="qemu">QEMU</option>
+          </select>
+        </div>
+        <button class="btn btn-sm btn-success w-100" onclick="addNode()">
+          <i class="bi bi-plus me-1"></i>Додати
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card">
+      <div class="card-header small"><i class="bi bi-bar-chart me-1"></i>Статистика</div>
+      <div class="card-body small">
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">Вузлів:</span>
+          <strong id="stat-nodes">0</strong>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">З'єднань:</span>
+          <strong id="stat-links">0</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const RAW_NODES = {{ nodes_json | safe }};
+const RAW_LINKS = {{ links_json | safe }};
+
+let network = null;
+const nodeDataset = new vis.DataSet();
+const edgeDataset = new vis.DataSet();
+
+function statusColor(status) {
+  if (status === 'started') return '#28a745';
+  if (status === 'suspended') return '#ffc107';
+  return '#dc3545';
+}
+
+function buildGraph() {
+  nodeDataset.clear();
+  edgeDataset.clear();
+
+  RAW_NODES.forEach(n => {
+    nodeDataset.add({
+      id: n.node_id,
+      label: n.name,
+      color: { background: statusColor(n.status || 'stopped'), border: '#888' },
+      font: { color: '#fff', size: 14 },
+      shape: 'box',
+      title: `Type: ${n.node_type || '?'}\nStatus: ${n.status || 'stopped'}`,
+    });
+  });
+
+  RAW_LINKS.forEach(l => {
+    edgeDataset.add({
+      id: l.link_id,
+      from: l.node_a_id,
+      to: l.node_b_id,
+      label: '',
+      color: { color: '#6c757d', highlight: '#0dcaf0' },
+      width: 2,
+    });
+  });
+
+  document.getElementById('stat-nodes').textContent = RAW_NODES.length;
+  document.getElementById('stat-links').textContent = RAW_LINKS.length;
+
+  const container = document.getElementById('topology-canvas');
+  const options = {
+    physics: { solver: 'forceAtlas2Based', stabilization: { iterations: 100 } },
+    interaction: { hover: true, navigationButtons: true, keyboard: true },
+    edges: { smooth: { type: 'continuous' } },
+    manipulation: {
+      enabled: false,
+      deleteNode: (data, cb) => { if (confirm('Delete node?')) { deleteNode(data.nodes[0]); } },
+      deleteEdge: (data, cb) => { if (confirm('Delete link?')) { deleteLinkById(data.edges[0]); } },
+    },
+  };
+
+  if (network) network.destroy();
+  network = new vis.Network(container, { nodes: nodeDataset, edges: edgeDataset }, options);
+
+  network.on('click', function(params) {
+    if (params.nodes.length) showNodeDetails(params.nodes[0]);
+  });
+}
+
+function showNodeDetails(nodeId) {
+  const node = RAW_NODES.find(n => n.node_id === nodeId);
+  if (!node) return;
+  const card = document.getElementById('nodeDetailsCard');
+  const body = document.getElementById('nodeDetails');
+  card.classList.remove('d-none');
+  body.innerHTML = `
+    <div class="mb-1"><strong>${node.name}</strong></div>
+    <div class="text-muted mb-1">Type: ${node.node_type || '?'}</div>
+    <div class="mb-1">Status: <span class="badge ${node.status === 'started' ? 'bg-success' : 'bg-danger'}">${node.status || 'stopped'}</span></div>
+    ${node.console ? `<div class="mb-2">Console: <code>:${node.console}</code></div>` : ''}
+    <div class="d-flex gap-1">
+      <button class="btn btn-xs btn-success" onclick="nodeActionTopology('${node.node_id}','start')"><i class="bi bi-play-fill"></i></button>
+      <button class="btn btn-xs btn-warning" onclick="nodeActionTopology('${node.node_id}','stop')"><i class="bi bi-stop-fill"></i></button>
+      <button class="btn btn-xs btn-danger" onclick="deleteNode('${node.node_id}')"><i class="bi bi-trash3"></i></button>
+    </div>
+  `;
+}
+
+function nodeActionTopology(nodeId, action) {
+  fetch(`/api/node/${nodeId}/${action}`, { method: 'POST' })
+    .then(() => { showToast(action === 'start' ? 'success' : 'warning', `Node ${action}ed`); });
+}
+
+function deleteNode(nodeId) {
+  if (!confirm('Delete node?')) return;
+  fetch(`/api/node/${nodeId}`, { method: 'DELETE' })
+    .then(() => { showToast('danger', 'Node deleted'); setTimeout(() => location.reload(), 1000); });
+}
+
+function deleteLinkById(linkId) {
+  fetch(`/api/link/${linkId}`, { method: 'DELETE' })
+    .then(() => { showToast('danger', 'Link deleted'); setTimeout(() => location.reload(), 1000); });
+}
+
+function addNode() {
+  const name = document.getElementById('newNodeName').value.trim();
+  const nodeType = document.getElementById('newNodeType').value;
+  if (!name) { showToast('warning', 'Enter node name'); return; }
+  fetch('/api/node', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, node_type: nodeType, x: 0, y: 0 }),
+  })
+    .then(r => r.json())
+    .then(d => {
+      showToast('success', `Node ${name} created`);
+      setTimeout(() => location.reload(), 1000);
+    })
+    .catch(e => showToast('danger', `Error: ${e}`));
+}
+
+// Live update via WebSocket
+socket.on('topology_update', data => {
+  if (data.nodes) {
+    RAW_NODES.length = 0;
+    data.nodes.forEach(n => RAW_NODES.push(n));
+    RAW_LINKS.length = 0;
+    data.links.forEach(l => RAW_LINKS.push(l));
+    buildGraph();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', buildGraph);
+</script>
+{% endblock %}

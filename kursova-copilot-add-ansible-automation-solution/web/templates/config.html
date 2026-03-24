@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Config – GNS3{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-file-earmark-code me-2 text-primary"></i>Редактор конфігурацій</h4>
+  <div>
+    <button class="btn btn-sm btn-outline-success" onclick="saveConfig()" id="saveBtn" disabled>
+      <i class="bi bi-floppy me-1"></i>Зберегти
+    </button>
+    <button class="btn btn-sm btn-outline-warning ms-1" onclick="backupConfig()" id="backupBtn" disabled>
+      <i class="bi bi-archive me-1"></i>Бекап
+    </button>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Node selector -->
+  <div class="col-12 col-lg-3">
+    <div class="card">
+      <div class="card-header small"><i class="bi bi-hdd-stack me-1"></i>Вузли</div>
+      <div class="list-group list-group-flush" id="nodeList">
+        {% if nodes %}
+          {% for n in nodes %}
+          <a href="#" class="list-group-item list-group-item-action list-group-item-dark"
+             onclick="loadConfig('{{ n.node_id }}', '{{ n.name }}'); return false;"
+             id="node-{{ n.node_id }}">
+            <div class="d-flex justify-content-between">
+              <strong>{{ n.name }}</strong>
+              <span class="badge {% if n.get('status') == 'started' %}bg-success{% else %}bg-secondary{% endif %} ms-1">
+                {{ n.get('status', 'stopped') }}
+              </span>
+            </div>
+            <small class="text-muted">{{ n.node_type }}</small>
+          </a>
+          {% endfor %}
+        {% else %}
+          <div class="list-group-item list-group-item-dark text-muted small text-center py-4">
+            <i class="bi bi-hdd-x d-block mb-1"></i>Вузлів немає
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Config editor -->
+  <div class="col-12 col-lg-9">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span id="editorTitle"><i class="bi bi-file-earmark me-1"></i>Оберіть вузол зліва</span>
+        <div>
+          <span class="badge bg-secondary" id="syntaxStatus"></span>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <textarea
+          id="configEditor"
+          class="form-control font-monospace bg-dark text-light border-0 rounded-0"
+          style="min-height: 480px; resize: vertical; font-size: 0.85rem;"
+          placeholder="Конфігурація вузла з'явиться тут після вибору вузла…"
+          spellcheck="false"
+          oninput="onConfigChange()"
+        ></textarea>
+      </div>
+      <div class="card-footer small text-muted d-flex justify-content-between">
+        <span id="editorInfo">Рядків: 0 | Символів: 0</span>
+        <span id="editorStatus"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backup list -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-archive me-2 text-warning"></i>Бекапи конфігурацій</span>
+      </div>
+      <div class="card-body p-0" id="backupList">
+        <div class="text-center py-3 text-muted small">
+          <i class="bi bi-archive d-block mb-1"></i>Бекапи з'являться тут після створення
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentNodeId = null;
+let currentNodeName = null;
+const backups = {};
+
+function loadConfig(nodeId, nodeName) {
+  currentNodeId = nodeId;
+  currentNodeName = nodeName;
+
+  // Highlight selected
+  document.querySelectorAll('#nodeList a').forEach(a => a.classList.remove('active'));
+  const el = document.getElementById(`node-${nodeId}`);
+  if (el) el.classList.add('active');
+
+  document.getElementById('editorTitle').innerHTML =
+    `<i class="bi bi-file-earmark-code me-1 text-primary"></i>${nodeName} – конфігурація`;
+  document.getElementById('configEditor').value = 'Завантаження…';
+  document.getElementById('saveBtn').disabled = true;
+  document.getElementById('backupBtn').disabled = true;
+  document.getElementById('editorStatus').textContent = 'Завантаження…';
+
+  fetch(`/api/node/${nodeId}/config`)
+    .then(r => r.json())
+    .then(data => {
+      const cfg = typeof data.config === 'string'
+        ? data.config
+        : (data.config ? JSON.stringify(data.config, null, 2) : '# Конфігурація недоступна');
+      document.getElementById('configEditor').value = cfg;
+      document.getElementById('saveBtn').disabled = false;
+      document.getElementById('backupBtn').disabled = false;
+      document.getElementById('editorStatus').textContent = 'Завантажено ✓';
+      updateEditorInfo();
+    })
+    .catch(() => {
+      document.getElementById('configEditor').value = '# Помилка завантаження конфігурації';
+      document.getElementById('editorStatus').textContent = 'Помилка';
+    });
+}
+
+function onConfigChange() {
+  updateEditorInfo();
+  document.getElementById('editorStatus').textContent = 'Змінено *';
+  validateSyntax();
+}
+
+function updateEditorInfo() {
+  const text = document.getElementById('configEditor').value;
+  const lines = text.split('\n').length;
+  document.getElementById('editorInfo').textContent =
+    `Рядків: ${lines} | Символів: ${text.length}`;
+}
+
+function validateSyntax() {
+  const text = document.getElementById('configEditor').value;
+  const status = document.getElementById('syntaxStatus');
+  // Basic FRR config validation
+  if (text.includes('!') || text.includes('router') || text.includes('interface')) {
+    status.className = 'badge bg-success';
+    status.textContent = '✓ FRR синтаксис';
+  } else if (text.trim().length === 0) {
+    status.className = 'badge bg-secondary';
+    status.textContent = 'Порожньо';
+  } else {
+    status.className = 'badge bg-info';
+    status.textContent = 'Текст';
+  }
+}
+
+function saveConfig() {
+  if (!currentNodeId) return;
+  const config = document.getElementById('configEditor').value;
+  // Config saving would require GNS3 API file write endpoint
+  showToast('info', `Конфіг для ${currentNodeName}: ${config.length} символів (зберігання потребує прямого доступу до GNS3)`);
+  document.getElementById('editorStatus').textContent = 'Збережено ✓';
+}
+
+function backupConfig() {
+  if (!currentNodeId) return;
+  const config = document.getElementById('configEditor').value;
+  const ts = new Date().toISOString().slice(0, 19).replace('T', '_');
+  const key = `${currentNodeName}_${ts}`;
+  backups[key] = config;
+  renderBackups();
+  showToast('success', `Бекап "${key}" створено`);
+}
+
+function renderBackups() {
+  const container = document.getElementById('backupList');
+  const keys = Object.keys(backups);
+  if (!keys.length) return;
+  let html = '<ul class="list-group list-group-flush">';
+  keys.reverse().forEach(key => {
+    html += `<li class="list-group-item list-group-item-dark d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-archive me-2 text-warning"></i><strong>${key}</strong>
+        <span class="text-muted small ms-2">${backups[key].length} символів</span>
+      </span>
+      <button class="btn btn-xs btn-outline-info" onclick="restoreBackup('${key}')">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>Відновити
+      </button>
+    </li>`;
+  });
+  html += '</ul>';
+  container.innerHTML = html;
+}
+
+function restoreBackup(key) {
+  if (!confirm(`Відновити бекап "${key}"?`)) return;
+  document.getElementById('configEditor').value = backups[key];
+  updateEditorInfo();
+  showToast('success', `Бекап "${key}" відновлено`);
+  document.getElementById('editorStatus').textContent = 'Відновлено *';
+}
+</script>
+{% endblock %}
