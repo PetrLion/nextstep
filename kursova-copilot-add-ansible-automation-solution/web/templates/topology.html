@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Topology – GNS3 Security{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/topology.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="fa-solid fa-network-wired me-2"></i>Network Topology</h4>
+  <div class="d-flex gap-2">
+    <button class="btn btn-sm btn-outline-accent" onclick="loadTopology()">
+      <i class="fa-solid fa-rotate me-1"></i>Refresh
+    </button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="resetTopologyLayout()">
+      <i class="fa-solid fa-expand me-1"></i>Reset Layout
+    </button>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Main topology canvas -->
+  <div class="col-lg-9">
+    <div class="card">
+      <div class="card-body p-0 position-relative">
+        <div id="cy" style="height: calc(100vh - 180px); min-height: 500px; width: 100%;"></div>
+        <div id="topo-loading" class="topo-overlay d-none">
+          <div class="spinner-border text-accent" role="status"></div>
+          <span class="ms-3">Loading topology...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Node info sidebar -->
+  <div class="col-lg-3">
+    <div class="card mb-3">
+      <div class="card-header"><i class="fa-solid fa-circle-info me-2"></i>Node Info</div>
+      <div class="card-body" id="node-info-panel">
+        <p class="text-muted small">Click a node to see details</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-chart-bar me-2"></i>Legend</div>
+      <div class="card-body">
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#58a6ff;border-radius:2px;"></span>
+          <span>Router</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#3fb950;border-radius:50%;"></span>
+          <span>PC / Workstation</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#f78166;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);"></span>
+          <span>Server</span>
+        </div>
+        <hr class="my-2">
+        <div class="small text-muted" id="topo-stats">
+          Nodes: <span id="leg-nodes">—</span> &nbsp;|&nbsp;
+          Links: <span id="leg-links">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+<script src="{{ url_for('static', filename='js/topology.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    initTopology();
+    loadTopology();
+  });
+</script>
+{% endblock %}

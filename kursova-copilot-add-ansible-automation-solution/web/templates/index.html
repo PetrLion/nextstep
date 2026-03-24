@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – GNS3 Security{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/topology.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Quick Stats -->
+<div class="row g-3 mb-4" id="stats-row">
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon text-accent"><i class="fa-solid fa-server fa-2x"></i></div>
+        <div>
+          <div class="stat-value" id="stat-nodes">—</div>
+          <div class="stat-label">Nodes Online</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon text-warning"><i class="fa-solid fa-plug fa-2x"></i></div>
+        <div>
+          <div class="stat-value" id="stat-ports">—</div>
+          <div class="stat-label">Open Ports</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon text-danger"><i class="fa-solid fa-bug fa-2x"></i></div>
+        <div>
+          <div class="stat-value" id="stat-vulns">—</div>
+          <div class="stat-label">Vulnerabilities</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon text-critical"><i class="fa-solid fa-triangle-exclamation fa-2x"></i></div>
+        <div>
+          <div class="stat-value" id="stat-critical">—</div>
+          <div class="stat-label">Critical Issues</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Topology mini-view -->
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fa-solid fa-network-wired me-2"></i>Network Topology</span>
+        <a href="/topology" class="btn btn-sm btn-outline-secondary">
+          <i class="fa-solid fa-expand me-1"></i>Full View
+        </a>
+      </div>
+      <div class="card-body p-0">
+        <div id="cy" style="height:380px;width:100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security Tests -->
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header"><i class="fa-solid fa-flask me-2"></i>Security Tests</div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <button class="btn btn-test btn-outline-accent" onclick="runSecurityTest('port_scan')">
+            <i class="fa-solid fa-plug-circle-check me-2"></i>Port Scan
+            <span class="spinner-border spinner-border-sm ms-2 d-none" id="spin-port_scan"></span>
+          </button>
+          <button class="btn btn-test btn-outline-accent" onclick="runSecurityTest('cis_benchmark')">
+            <i class="fa-solid fa-clipboard-check me-2"></i>CIS Benchmark
+            <span class="spinner-border spinner-border-sm ms-2 d-none" id="spin-cis_benchmark"></span>
+          </button>
+          <button class="btn btn-test btn-outline-accent" onclick="runSecurityTest('vulnerability_check')">
+            <i class="fa-solid fa-bug me-2"></i>Vulnerability Check
+            <span class="spinner-border spinner-border-sm ms-2 d-none" id="spin-vulnerability_check"></span>
+          </button>
+          <button class="btn btn-test btn-outline-accent" onclick="runSecurityTest('ping_check')">
+            <i class="fa-solid fa-satellite-dish me-2"></i>Ping Check
+            <span class="spinner-border spinner-border-sm ms-2 d-none" id="spin-ping_check"></span>
+          </button>
+          <button class="btn btn-test btn-outline-accent" onclick="runSecurityTest('acl_validation')">
+            <i class="fa-solid fa-shield me-2"></i>ACL Validation
+            <span class="spinner-border spinner-border-sm ms-2 d-none" id="spin-acl_validation"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-wrench me-2"></i>Auto-Fix</div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <button class="btn btn-fix btn-outline-warning" onclick="applyFix('close_ports')">
+            <i class="fa-solid fa-ban me-2"></i>Close Dangerous Ports
+          </button>
+          <button class="btn btn-fix btn-outline-warning" onclick="applyFix('enable_firewall')">
+            <i class="fa-solid fa-fire-flame-curved me-2"></i>Enable Firewall
+          </button>
+          <button class="btn btn-fix btn-outline-warning" onclick="applyFix('update_system')">
+            <i class="fa-solid fa-rotate me-2"></i>Check System Updates
+          </button>
+          <button class="btn btn-fix btn-outline-warning" onclick="applyFix('reset_acl')">
+            <i class="fa-solid fa-trash-arrow-up me-2"></i>Reset ACL Rules
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Results Table -->
+<div class="card mt-4">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span><i class="fa-solid fa-table-list me-2"></i>Test Results</span>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary" onclick="exportCSV()">
+        <i class="fa-solid fa-file-csv me-1"></i>CSV
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" onclick="exportJSON()">
+        <i class="fa-solid fa-file-code me-1"></i>JSON
+      </button>
+      <button class="btn btn-sm btn-outline-danger" onclick="clearResults()">
+        <i class="fa-solid fa-trash me-1"></i>Clear
+      </button>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover table-sm mb-0" id="results-table">
+        <thead>
+          <tr>
+            <th>Test Name</th>
+            <th>Status</th>
+            <th>Severity</th>
+            <th>Duration</th>
+            <th>Timestamp</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="results-tbody">
+          <tr id="results-empty-row">
+            <td colspan="6" class="text-center text-muted py-4">
+              <i class="fa-solid fa-flask me-2"></i>Run a security test to see results
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+<script src="{{ url_for('static', filename='js/topology.js') }}"></script>
+<script src="{{ url_for('static', filename='js/results.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchTopologyStats();
+    loadResults();
+    initTopology();
+    loadTopology();
+    setInterval(() => { loadResults(); fetchTopologyStats(); }, 30000);
+  });
+</script>
+{% endblock %}

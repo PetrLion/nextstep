@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Settings – GNS3 Security{% endblock %}
+
+{% block content %}
+<h4 class="mb-4"><i class="fa-solid fa-gear me-2"></i>Settings</h4>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-server me-2"></i>GNS3 Connection</div>
+      <div class="card-body">
+        <form id="gns3-settings-form">
+          <div class="mb-3">
+            <label class="form-label text-secondary">GNS3 Host</label>
+            <input type="text" class="form-control bg-card border-secondary text-light"
+                   id="gns3-host" value="localhost" placeholder="localhost">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-secondary">GNS3 Port</label>
+            <input type="number" class="form-control bg-card border-secondary text-light"
+                   id="gns3-port" value="3080" min="1" max="65535">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-secondary">Project File Path</label>
+            <input type="text" class="form-control bg-card border-secondary text-light"
+                   id="gns3-project-path"
+                   value="/tmp/gns3_project/Network_Topology.gns3"
+                   placeholder="/tmp/gns3_project/Network_Topology.gns3">
+          </div>
+          <button type="button" class="btn btn-accent" onclick="saveGns3Settings()">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Save
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-clock me-2"></i>Scan Settings</div>
+      <div class="card-body">
+        <form id="scan-settings-form">
+          <div class="mb-3">
+            <label class="form-label text-secondary">Auto-refresh Interval (seconds)</label>
+            <input type="number" class="form-control bg-card border-secondary text-light"
+                   id="refresh-interval" value="30" min="5" max="3600">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-secondary">Ping Targets (one per line)</label>
+            <textarea class="form-control bg-card border-secondary text-light font-monospace"
+                      id="ping-targets" rows="5"
+                      placeholder="192.168.1.1&#10;192.168.1.2">127.0.0.1
+192.168.1.1
+192.168.1.2
+192.168.1.10
+192.168.1.20</textarea>
+          </div>
+          <button type="button" class="btn btn-accent" onclick="saveScanSettings()">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Save
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-circle-info me-2"></i>About</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-3 text-secondary">Application</dt>
+          <dd class="col-sm-9">GNS3 Security Dashboard</dd>
+          <dt class="col-sm-3 text-secondary">Version</dt>
+          <dd class="col-sm-9">1.0.0</dd>
+          <dt class="col-sm-3 text-secondary">Flask</dt>
+          <dd class="col-sm-9">3.1.0</dd>
+          <dt class="col-sm-3 text-secondary">Security Tests</dt>
+          <dd class="col-sm-9">Port Scan, CIS Benchmark, Vulnerability Check, Ping Check, ACL Validation</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function saveGns3Settings() {
+  const settings = {
+    host: document.getElementById('gns3-host').value,
+    port: document.getElementById('gns3-port').value,
+    project_path: document.getElementById('gns3-project-path').value,
+  };
+  localStorage.setItem('gns3_settings', JSON.stringify(settings));
+  showToast('GNS3 settings saved (local only)', 'success');
+}
+
+function saveScanSettings() {
+  const settings = {
+    refresh_interval: parseInt(document.getElementById('refresh-interval').value, 10),
+    ping_targets: document.getElementById('ping-targets').value
+      .split('\n').map(s => s.trim()).filter(Boolean),
+  };
+  localStorage.setItem('scan_settings', JSON.stringify(settings));
+  showToast('Scan settings saved', 'success');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const gns3 = JSON.parse(localStorage.getItem('gns3_settings') || '{}');
+  if (gns3.host) document.getElementById('gns3-host').value = gns3.host;
+  if (gns3.port) document.getElementById('gns3-port').value = gns3.port;
+  if (gns3.project_path) document.getElementById('gns3-project-path').value = gns3.project_path;
+
+  const scan = JSON.parse(localStorage.getItem('scan_settings') || '{}');
+  if (scan.refresh_interval) document.getElementById('refresh-interval').value = scan.refresh_interval;
+  if (scan.ping_targets) document.getElementById('ping-targets').value = scan.ping_targets.join('\n');
+});
+</script>
+{% endblock %}

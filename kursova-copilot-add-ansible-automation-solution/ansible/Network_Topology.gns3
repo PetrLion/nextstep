@@ -11,36 +11,156 @@
   "topology": {
     "computes": [],
     "drawings": [],
+    "nodes": [
+      {
+        "compute_id": "local",
+        "console": 5001,
+        "console_type": "telnet",
+        "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "R1", "x": 0, "y": -20},
+        "name": "R1",
+        "node_id": "10000000-0000-0000-0000-000000000001",
+        "node_type": "qemu",
+        "properties": {},
+        "status": "stopped",
+        "symbol": ":/symbols/router.svg",
+        "x": 300,
+        "y": 200
+      },
+      {
+        "compute_id": "local",
+        "console": 5002,
+        "console_type": "telnet",
+        "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "R2", "x": 0, "y": -20},
+        "name": "R2",
+        "node_id": "10000000-0000-0000-0000-000000000002",
+        "node_type": "qemu",
+        "properties": {},
+        "status": "stopped",
+        "symbol": ":/symbols/router.svg",
+        "x": 700,
+        "y": 200
+      },
+      {
+        "compute_id": "local",
+        "console": 5003,
+        "console_type": "telnet",
+        "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "R3", "x": 0, "y": -20},
+        "name": "R3",
+        "node_id": "10000000-0000-0000-0000-000000000003",
+        "node_type": "qemu",
+        "properties": {},
+        "status": "stopped",
+        "symbol": ":/symbols/router.svg",
+        "x": 700,
+        "y": 500
+      },
+      {
+        "compute_id": "local",
+        "console": 5004,
+        "console_type": "telnet",
+        "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "R4", "x": 0, "y": -20},
+        "name": "R4",
+        "node_id": "10000000-0000-0000-0000-000000000004",
+        "node_type": "qemu",
+        "properties": {},
+        "status": "stopped",
+        "symbol": ":/symbols/router.svg",
+        "x": 1100,
+        "y": 350
+      },
+      {
+        "compute_id": "local",
+        "console": 5005,
+        "console_type": "telnet",
+        "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "PC1", "x": 0, "y": -20},
+        "name": "PC1",
+        "node_id": "10000000-0000-0000-0000-000000000005",
+        "node_type": "qemu",
+        "properties": {},
+        "status": "stopped",
+        "symbol": ":/symbols/computer.svg",
+        "x": 100,
+        "y": 100
+      },
+      {
+        "compute_id": "local",
+        "console": 5006,
+        "console_type": "telnet",
+        "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "PC2", "x": 0, "y": -20},
+        "name": "PC2",
+        "node_id": "10000000-0000-0000-0000-000000000006",
+        "node_type": "qemu",
+        "properties": {},
+        "status": "stopped",
+        "symbol": ":/symbols/computer.svg",
+        "x": 100,
+        "y": 350
+      },
+      {
+        "compute_id": "local",
+        "console": 5007,
+        "console_type": "telnet",
+        "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "PC-PERIMETER", "x": 0, "y": -20},
+        "name": "PC-PERIMETER",
+        "node_id": "10000000-0000-0000-0000-000000000007",
+        "node_type": "qemu",
+        "properties": {},
+        "status": "stopped",
+        "symbol": ":/symbols/computer.svg",
+        "x": 500,
+        "y": 700
+      },
+      {
+        "compute_id": "local",
+        "console": 5008,
+        "console_type": "telnet",
+        "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "SRV-WEB", "x": 0, "y": -20},
+        "name": "SRV-WEB",
+        "node_id": "10000000-0000-0000-0000-000000000008",
+        "node_type": "qemu",
+        "properties": {},
+        "status": "stopped",
+        "symbol": ":/symbols/server.svg",
+        "x": 1300,
+        "y": 150
+      },
+      {
+        "compute_id": "local",
+        "console": 5009,
+        "console_type": "telnet",
+        "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "SRV-REDIS", "x": 0, "y": -20},
+        "name": "SRV-REDIS",
+        "node_id": "10000000-0000-0000-0000-000000000009",
+        "node_type": "qemu",
+        "properties": {},
+        "status": "stopped",
+        "symbol": ":/symbols/server.svg",
+        "x": 1300,
+        "y": 350
+      },
+      {
+        "compute_id": "local",
+        "console": 5010,
+        "console_type": "telnet",
+        "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "SRV-DB", "x": 0, "y": -20},
+        "name": "SRV-DB",
+        "node_id": "10000000-0000-0000-0000-00000000000a",
+        "node_type": "qemu",
+        "properties": {},
+        "status": "stopped",
+        "symbol": ":/symbols/server.svg",
+        "x": 1300,
+        "y": 550
+      }
+    ],
     "links": [
       {
         "filters": {},
         "link_id": "20000000-0000-0000-0000-000000000001",
         "link_style": {},
         "nodes": [
-          {
-            "adapter_number": 0,
-            "label": {
-              "rotation": 0,
-              "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-              "text": "e0/0",
-              "x": 0,
-              "y": 0
-            },
-            "node_id": "10000000-0000-0000-0000-000000000001",
-            "port_number": 0
-          },
-          {
-            "adapter_number": 0,
-            "label": {
-              "rotation": 0,
-              "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-              "text": "e0/0",
-              "x": 0,
-              "y": 0
-            },
-            "node_id": "10000000-0000-0000-0000-000000000002",
-            "port_number": 0
-          }
+          {"adapter_number": 0, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e0/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000005", "port_number": 0},
+          {"adapter_number": 0, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e0/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000001", "port_number": 0}
         ],
         "suspend": false
       },
@@ -49,30 +169,8 @@
         "link_id": "20000000-0000-0000-0000-000000000002",
         "link_style": {},
         "nodes": [
-          {
-            "adapter_number": 1,
-            "label": {
-              "rotation": 0,
-              "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-              "text": "e1/0",
-              "x": 0,
-              "y": 0
-            },
-            "node_id": "10000000-0000-0000-0000-000000000002",
-            "port_number": 0
-          },
-          {
-            "adapter_number": 0,
-            "label": {
-              "rotation": 0,
-              "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-              "text": "e0/0",
-              "x": 0,
-              "y": 0
-            },
-            "node_id": "10000000-0000-0000-0000-000000000003",
-            "port_number": 0
-          }
+          {"adapter_number": 0, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e0/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000006", "port_number": 0},
+          {"adapter_number": 1, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e1/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000001", "port_number": 0}
         ],
         "suspend": false
       },
@@ -81,30 +179,8 @@
         "link_id": "20000000-0000-0000-0000-000000000003",
         "link_style": {},
         "nodes": [
-          {
-            "adapter_number": 1,
-            "label": {
-              "rotation": 0,
-              "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-              "text": "e1/0",
-              "x": 0,
-              "y": 0
-            },
-            "node_id": "10000000-0000-0000-0000-000000000003",
-            "port_number": 0
-          },
-          {
-            "adapter_number": 0,
-            "label": {
-              "rotation": 0,
-              "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-              "text": "e0/0",
-              "x": 0,
-              "y": 0
-            },
-            "node_id": "10000000-0000-0000-0000-000000000004",
-            "port_number": 0
-          }
+          {"adapter_number": 1, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e1/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000001", "port_number": 1},
+          {"adapter_number": 0, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e0/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000002", "port_number": 0}
         ],
         "suspend": false
       },
@@ -113,149 +189,82 @@
         "link_id": "20000000-0000-0000-0000-000000000004",
         "link_style": {},
         "nodes": [
-          {
-            "adapter_number": 1,
-            "label": {
-              "rotation": 0,
-              "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-              "text": "e1/0",
-              "x": 0,
-              "y": 0
-            },
-            "node_id": "10000000-0000-0000-0000-000000000004",
-            "port_number": 0
-          },
-          {
-            "adapter_number": 1,
-            "label": {
-              "rotation": 0,
-              "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-              "text": "e1/0",
-              "x": 0,
-              "y": 0
-            },
-            "node_id": "10000000-0000-0000-0000-000000000001",
-            "port_number": 0
-          }
+          {"adapter_number": 1, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e1/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000002", "port_number": 0},
+          {"adapter_number": 0, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e0/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000003", "port_number": 0}
+        ],
+        "suspend": false
+      },
+      {
+        "filters": {},
+        "link_id": "20000000-0000-0000-0000-000000000005",
+        "link_style": {},
+        "nodes": [
+          {"adapter_number": 2, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e2/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000002", "port_number": 0},
+          {"adapter_number": 0, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e0/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000004", "port_number": 0}
+        ],
+        "suspend": false
+      },
+      {
+        "filters": {},
+        "link_id": "20000000-0000-0000-0000-000000000006",
+        "link_style": {},
+        "nodes": [
+          {"adapter_number": 1, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e1/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000003", "port_number": 0},
+          {"adapter_number": 1, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e1/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000004", "port_number": 0}
+        ],
+        "suspend": false
+      },
+      {
+        "filters": {},
+        "link_id": "20000000-0000-0000-0000-000000000007",
+        "link_style": {},
+        "nodes": [
+          {"adapter_number": 0, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e0/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000007", "port_number": 0},
+          {"adapter_number": 2, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e2/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000003", "port_number": 0}
+        ],
+        "suspend": false
+      },
+      {
+        "filters": {},
+        "link_id": "20000000-0000-0000-0000-000000000008",
+        "link_style": {},
+        "nodes": [
+          {"adapter_number": 1, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e1/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000004", "port_number": 1},
+          {"adapter_number": 0, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e0/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000008", "port_number": 0}
+        ],
+        "suspend": false
+      },
+      {
+        "filters": {},
+        "link_id": "20000000-0000-0000-0000-000000000009",
+        "link_style": {},
+        "nodes": [
+          {"adapter_number": 2, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e2/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000004", "port_number": 0},
+          {"adapter_number": 0, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e0/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000009", "port_number": 0}
+        ],
+        "suspend": false
+      },
+      {
+        "filters": {},
+        "link_id": "20000000-0000-0000-0000-00000000000a",
+        "link_style": {},
+        "nodes": [
+          {"adapter_number": 3, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e3/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000004", "port_number": 0},
+          {"adapter_number": 0, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e0/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-00000000000a", "port_number": 0}
+        ],
+        "suspend": false
+      },
+      {
+        "filters": {},
+        "link_id": "20000000-0000-0000-0000-00000000000b",
+        "link_style": {},
+        "nodes": [
+          {"adapter_number": 1, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e1/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000008", "port_number": 0},
+          {"adapter_number": 1, "label": {"rotation": 0, "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0", "text": "e1/0", "x": 0, "y": 0}, "node_id": "10000000-0000-0000-0000-000000000009", "port_number": 0}
         ],
         "suspend": false
       }
-    ],
-    "nodes": [
-      {
-        "compute_id": "local",
-        "console": 5001,
-        "console_type": "telnet",
-        "custom_adapters": [],
-        "first_port_name": null,
-        "height": 59,
-        "label": {
-          "rotation": 0,
-          "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-          "text": "R1",
-          "x": -25,
-          "y": -25
-        },
-        "locked": false,
-        "name": "R1",
-        "node_id": "10000000-0000-0000-0000-000000000001",
-        "node_type": "qemu",
-        "properties": {
-          "adapters": 4,
-          "memory": 256,
-          "name": "R1"
-        },
-        "x": 0,
-        "y": 0,
-        "width": 72,
-        "symbol": ":/symbols/router.svg"
-      },
-      {
-        "compute_id": "local",
-        "console": 5002,
-        "console_type": "telnet",
-        "custom_adapters": [],
-        "first_port_name": null,
-        "height": 59,
-        "label": {
-          "rotation": 0,
-          "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-          "text": "R2",
-          "x": -25,
-          "y": -25
-        },
-        "locked": false,
-        "name": "R2",
-        "node_id": "10000000-0000-0000-0000-000000000002",
-        "node_type": "qemu",
-        "properties": {
-          "adapters": 4,
-          "memory": 256,
-          "name": "R2"
-        },
-        "x": 200,
-        "y": 0,
-        "width": 72,
-        "symbol": ":/symbols/router.svg"
-      },
-      {
-        "compute_id": "local",
-        "console": 5003,
-        "console_type": "telnet",
-        "custom_adapters": [],
-        "first_port_name": null,
-        "height": 59,
-        "label": {
-          "rotation": 0,
-          "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-          "text": "R3",
-          "x": -25,
-          "y": -25
-        },
-        "locked": false,
-        "name": "R3",
-        "node_id": "10000000-0000-0000-0000-000000000003",
-        "node_type": "qemu",
-        "properties": {
-          "adapters": 4,
-          "memory": 256,
-          "name": "R3"
-        },
-        "x": 0,
-        "y": 200,
-        "width": 72,
-        "symbol": ":/symbols/router.svg"
-      },
-      {
-        "compute_id": "local",
-        "console": 5004,
-        "console_type": "telnet",
-        "custom_adapters": [],
-        "first_port_name": null,
-        "height": 59,
-        "label": {
-          "rotation": 0,
-          "style": "font-family: DejaVu Sans Mono;font-size: 10.0;font-weight: bold;fill: #2e3436;fill-opacity: 1.0",
-          "text": "R4",
-          "x": -25,
-          "y": -25
-        },
-        "locked": false,
-        "name": "R4",
-        "node_id": "10000000-0000-0000-0000-000000000004",
-        "node_type": "qemu",
-        "properties": {
-          "adapters": 4,
-          "memory": 256,
-          "name": "R4"
-        },
-        "x": 200,
-        "y": 200,
-        "width": 72,
-        "symbol": ":/symbols/router.svg"
-      }
     ]
   },
-  "type": "topology",
   "version": "2.2.0"
 }

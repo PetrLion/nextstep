@@ -1,0 +1,254 @@
+/* ============================================================
+   GNS3 Security Dashboard – Main Styles
+   ============================================================ */
+
+:root {
+  --bg-primary:   #0d1117;
+  --bg-secondary: #161b22;
+  --bg-card:      #21262d;
+  --border:       #30363d;
+  --text-primary: #e6edf3;
+  --text-secondary:#8b949e;
+  --accent:       #58a6ff;
+  --critical:     #ff4444;
+  --high:         #ffaa00;
+  --medium:       #ff8800;
+  --low:          #44ff44;
+  --success:      #3fb950;
+  --warning:      #d29922;
+}
+
+/* ---- Base -------------------------------------------------- */
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 0.92rem;
+}
+
+/* ---- Navbar ----------------------------------------------- */
+#main-navbar {
+  background: var(--bg-secondary) !important;
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 1.2rem;
+}
+
+#main-navbar .navbar-brand {
+  font-size: 1.1rem;
+  color: var(--text-primary) !important;
+}
+
+#main-navbar .nav-link {
+  color: var(--text-secondary) !important;
+  transition: color 0.15s;
+}
+
+#main-navbar .nav-link:hover,
+#main-navbar .nav-link.active {
+  color: var(--accent) !important;
+}
+
+/* ---- Cards ------------------------------------------------- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.card-header {
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ---- Stat Cards ------------------------------------------- */
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.stat-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+
+.stat-icon {
+  opacity: 0.8;
+}
+
+/* ---- Colors ----------------------------------------------- */
+.text-accent   { color: var(--accent)   !important; }
+.text-critical { color: var(--critical) !important; }
+.text-high     { color: var(--high)     !important; }
+.text-medium   { color: var(--medium)   !important; }
+.text-low      { color: var(--low)      !important; }
+
+.bg-card { background: var(--bg-card) !important; }
+
+/* ---- Buttons ---------------------------------------------- */
+.btn-accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0d1117;
+  font-weight: 600;
+}
+
+.btn-accent:hover {
+  background: #79b8ff;
+  border-color: #79b8ff;
+  color: #0d1117;
+}
+
+.btn-outline-accent {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-outline-accent:hover {
+  background: var(--accent);
+  color: #0d1117;
+}
+
+.btn-test, .btn-fix {
+  text-align: left;
+  font-size: 0.88rem;
+  padding: 0.5rem 0.85rem;
+}
+
+/* ---- Tables ----------------------------------------------- */
+.table-dark {
+  --bs-table-bg: var(--bg-card);
+  --bs-table-striped-bg: rgba(255,255,255,0.02);
+  --bs-table-hover-bg: rgba(88,166,255,0.07);
+  --bs-table-border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.table th {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 0.85rem;
+}
+
+.table td {
+  padding: 0.55rem 0.85rem;
+  vertical-align: middle;
+  border-color: var(--border);
+}
+
+/* ---- Severity Badges -------------------------------------- */
+.badge-critical { background: var(--critical);  color: #fff; }
+.badge-high     { background: var(--high);      color: #0d1117; }
+.badge-medium   { background: var(--medium);    color: #0d1117; }
+.badge-low      { background: var(--low);       color: #0d1117; }
+.badge-unknown  { background: var(--text-secondary); color: #0d1117; }
+
+.status-pass    { color: var(--success); }
+.status-fail    { color: var(--critical); }
+.status-warning { color: var(--warning); }
+.status-error   { color: var(--text-secondary); }
+
+/* ---- Legend items ---------------------------------------- */
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ---- Form controls --------------------------------------- */
+.form-control {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+.form-control:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 0.2rem rgba(88,166,255,0.2) !important;
+}
+
+.form-label { color: var(--text-secondary); font-size: 0.82rem; }
+
+/* ---- Toast ----------------------------------------------- */
+.toast {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  min-width: 280px;
+}
+
+.toast-header {
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+/* ---- Code / pre ------------------------------------------ */
+pre {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+/* ---- Modal ---------------------------------------------- */
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+.modal-header {
+  border-bottom-color: var(--border);
+}
+
+/* ---- Scrollbar (webkit) --------------------------------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* ---- WebSocket indicator -------------------------------- */
+#ws-indicator .fa-circle {
+  transition: color 0.3s;
+}
